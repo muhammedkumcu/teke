@@ -1,0 +1,10 @@
+# gecici ve bu bilgisayara ait dosyalar (depoya girmez)
+deneme/
+*.log
+KORU-*.md
+GELEN-DERSLER.md
+gecis/
+yayin-onizleme/
+kit/ayarlar/kisisel.json
+.claude/
+INCOMING-LESSONS.md

@@ -1,0 +1,56 @@
+{
+  "_aciklama": "Kitin bu projedeki ayarları. Elle düzenlenebilir; kit güncellemesi buradaki değerleri korur.",
+  "belgeKoku": "",
+  "yasaDosyasi": "CLAUDE.md",
+  "devirKlasoru": "docs/devir",
+  "belge": {
+    "yollar": {},
+    "haberKB": {}
+  },
+  "roller": {
+    "kod": {
+      "model": "opus",
+      "efor": "high"
+    },
+    "tasarim": {
+      "model": "opus",
+      "efor": "high"
+    },
+    "ajanIsci": "sonnet",
+    "ajanHakem": "opus"
+  },
+  "ajan": {
+    "yasakModeller": [],
+    "forkYasak": true,
+    "modelZorunlu": true
+  },
+  "baglam": {
+    "bildirYuzde": 50,
+    "compactYuzde": 65,
+    "pencere": 1000000,
+    "pencereler": {}
+  },
+  "commit": {
+    "ortakYazarYasak": false
+  },
+  "onay": {
+    "desenler": [
+      {
+        "ad": "uzak depoya gönderme (git push)",
+        "desen": "\\bgit(\\.exe)?(\\s+(-[cC]\\s+\\S+|--[\\w-]+(=\\S+)?))*\\s+push\\b"
+      },
+      {
+        "ad": "yayın (deploy)",
+        "desen": "\\b(wrangler|vercel|netlify|firebase|flyctl|fly)\\s+(deploy|publish)\\b|\\b(npm|pnpm|yarn|bun)\\s+(run\\s+)?(deploy|yayinla|publish)\\b"
+      },
+      {
+        "ad": "uzak veritabanına yazma",
+        "desen": "\\bwrangler\\s+d1\\s+(execute|migrations\\s+apply)\\b.*--remote\\b"
+      }
+    ]
+  },
+  "ders": {
+    "hatirlatMesaj": 25
+  },
+  "kapaliKancalar": []
+}
