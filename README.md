@@ -4,7 +4,11 @@
 
 <br>
 
-**Claude Code'da tek bir oturumla konuşursun. Kodu ve tasarımı ayrı oturumlar yapar, biten her işe başka bir göz bakar.**
+**Büyük işleri Claude Code'da tek bir sohbetten yönet.**
+
+Sen yalnızca orkestratörle konuşursun; kodu ve tasarımı ayrı oturumlar yapar, biten her işe başka bir göz bakar.
+Sohbet dolmadan haber verir ve kaldığın yerden sürer. Her işten önce plan gösterir, yayından önce sana sorar.
+Kararlarını, cevap bekleyen soruları ve hatalardan çıkan dersleri yazar; hiçbirini unutmaz.
 
 <br>
 
@@ -288,7 +292,7 @@ Her yeni projende aynı tercihleri istiyorsan `~/teke/kit/ayarlar/kisisel.json` 
 
 <br>
 
-Teke Türkçe ve İngilizce kurulur. Dil ilk kurulumda seçilir ve ayarda saklanır; güncellemede yeniden söylemen gerekmez. Bu sayfadaki kurulum cümlesi Türkçe kurar. İngilizce kurulum [README.en.md](README.en.md) sayfasında anlatılır.
+Teke Türkçe ya da İngilizce kurulur. Dil ilk kurulumda seçilir ve ayarda saklanır; güncellemede yeniden söylemen gerekmez. Bu sayfadaki kurulum cümlesi Türkçe kurar. İngilizce kurulum [README.en.md](README.en.md) sayfasında anlatılır.
 
 İki dilde betikler aynıdır. Değişen, orkestratörün ve senin okuduğun metinler ile projene açılan dosyaların adlarıdır: İngilizce kurulumda `DEVAM.md` yerine `STATUS.md`, `docs/devir/` yerine `docs/handoff/` açılır.
 

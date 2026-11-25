@@ -4,7 +4,11 @@
 
 <br>
 
-**In Claude Code you talk to one session. Separate sessions do the code and the design, and another pair of eyes looks at every finished task.**
+**Run big jobs in Claude Code from a single chat.**
+
+You talk only to the orchestrator; separate sessions do the code and the design, and another pair of eyes looks at every finished task.
+It warns you before the chat fills up and carries on from where you left off. It shows a plan before every task and asks you before a deploy.
+It writes down your decisions, the questions waiting on you and the lessons learned from mistakes, and forgets none of them.
 
 <br>
 
