@@ -41,11 +41,15 @@
       },
       {
         "ad": "yayın (deploy)",
-        "desen": "\\b(wrangler|vercel|netlify|firebase|flyctl|fly)\\s+(deploy|publish)\\b|\\b(npm|pnpm|yarn|bun)\\s+(run\\s+)?(deploy|yayinla|publish)\\b"
+        "desen": "\\b(wrangler|vercel|netlify|firebase|flyctl|fly)(@\\S+)?\\s+((pages|versions)\\s+)?(deploy|publish)\\b(?![^;&|\\n]*\\s--dry-run(\\s|$))|\\bvercel\\b[^;&|\\n]*\\s--prod\\b|\\b(npm|pnpm|yarn|bun)\\s+((-{1,2}\\w[\\w-]*(=\\S+|\\s+[^-\\s]\\S*)?|run|exec|workspace\\s+\\S+)\\s+)*(deploy|yayinla|publish)\\b(?![^;&|\\n]*\\s--dry-run(\\s|$))"
       },
       {
         "ad": "uzak veritabanına yazma",
-        "desen": "\\bwrangler\\s+d1\\s+(execute|migrations\\s+apply)\\b.*--remote\\b"
+        "desen": "\\bwrangler(@\\S+)?\\s+d1\\s+(execute|migrations\\s+apply)\\b[^;&|\\n]*--remote\\b"
+      },
+      {
+        "ad": "canlı ortam ayarı (secret, rollback)",
+        "desen": "\\bwrangler(@\\S+)?\\s+(secret\\s+(put|delete|bulk)|rollback)\\b|\\b(flyctl|fly)\\s+secrets\\s+(set|unset|import)\\b|\\bvercel\\s+env\\s+(add|rm)\\b"
       }
     ]
   },

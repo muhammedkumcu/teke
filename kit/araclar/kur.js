@@ -154,6 +154,18 @@ else if (eskiBizim) rapor.notlar.push(prova
 const vars = jsonOku(path.join(KIT, "ayarlar", "ayar.varsayilan.json"));
 // Varsayılan onay listesindeki adlar kurulum dilinde yazılır (sırayla); desenler aynıdır.
 const onayVars = { desenler: vars.onay.desenler.map((d, i) => ({ ...d, ad: (P.onayAdlari && P.onayAdlari[i]) || d.ad })) };
+// Kitin önceki sürümlerindeki varsayılan desenler → bugünkü varsayılan listedeki sırası (güncellemede yenilenir).
+const ESKI_DESENLER = {
+  [String.raw`\b(wrangler|vercel|netlify|firebase|flyctl|fly)\s+(deploy|publish)\b|\b(npm|pnpm|yarn|bun)\s+(run\s+)?(deploy|yayinla|publish)\b`]: 1,
+  [String.raw`\bwrangler\s+d1\s+(execute|migrations\s+apply)\b.*--remote\b`]: 2,
+};
+// "2.3.0" < "2.3.1" gibi sürüm karşılaştırması; okunamayan sürüm eski sayılır.
+function surumKucuk(a, b) {
+  const p = (s) => String(s || "0").split(".").map((x) => parseInt(x, 10) || 0);
+  const x = p(a), y = p(b);
+  for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0); }
+  return false;
+}
 const ayar = {
   _aciklama: m("kur.ayar.aciklama", vars._aciklama),
   kitSurumu: SURUM,
@@ -184,7 +196,26 @@ if (eski) {
   ayar.ajan = { ...vars.ajan, ...(eski.ajan || {}) };
   ayar.baglam = { ...vars.baglam, ...(eski.baglam || {}) };
   if (eski.commit && eski.commit.ortakYazarYasak !== undefined) ayar.commit = { ortakYazarYasak: !!eski.commit.ortakYazarYasak };
-  if (eski.onay && Array.isArray(eski.onay.desenler)) ayar.onay = { desenler: eski.onay.desenler };
+  if (eski.onay && Array.isArray(eski.onay.desenler)) {
+    // Kullanıcının listesi korunur. Yalnız kitin ESKİ varsayılan deseniyle birebir duran madde yeni varsayılanla değişir
+    // (2.3.1: deneme yayını yakalanmaz; "pnpm -C … deploy", "wrangler pages deploy" yakalanır).
+    let yenilenen = 0;
+    const desenler = eski.onay.desenler.map((d) => {
+      const i = ESKI_DESENLER[d && d.desen];
+      if (i === undefined) return d;
+      yenilenen++;
+      return { ...d, desen: vars.onay.desenler[i].desen };
+    });
+    // Yayın deseni duran projeye, yayın sayılan yeni madde (canlı ortam ayarı) ilk geçişte eklenir.
+    const yayinVar = desenler.some((d) => d && d.desen === vars.onay.desenler[1].desen);
+    const yeniMadde = onayVars.desenler[3];
+    if (yeniMadde && yayinVar && surumKucuk(eski.kitSurumu, "2.3.1") && !desenler.some((d) => d && d.desen === yeniMadde.desen)) {
+      desenler.push(yeniMadde);
+      rapor.notlar.push(m("kur.onay.eklendi", "Onay listesine yeni madde eklendi: \"{ad}\" (canlıdaki ayarı değiştiren komutlar da yayın sayılır). İstenmiyorsa ayar.json → onay.desenler listesinden çıkar.", { ad: yeniMadde.ad }));
+    }
+    if (yenilenen) rapor.notlar.push(m("kur.onay.yenilendi", "Onay listesinde kitin eski varsayılanıyla duran {n} desen yenilendi (deneme yayını artık sorulmaz; alt klasörden ve \"pages\" ile yapılan yayın yakalanır).", { n: yenilenen }));
+    ayar.onay = { desenler };
+  }
   if (eski.ders) ayar.ders = { ...vars.ders, ...eski.ders };
   // eski sürümün kanca adları artık yok; yalnız bugünkü adlar korunur
   ayar.kapaliKancalar = (eski.kapaliKancalar || []).filter((k) => fs.existsSync(path.join(KIT, "kancalar", k)));
@@ -215,7 +246,7 @@ yaz(ayarYol, JSON.stringify(ayar, null, 2) + "\n", "ic");
 // ---------- 2) kit dosyaları ----------
 const K = P.klasorler;
 for (const f of fs.readdirSync(path.join(KIT, "kancalar"))) yaz(path.join(ork, "kancalar", f), ic("kancalar", f), "ic");
-for (const f of ["bakim.js", "ders-tara.js", "nobet.js", "saglik.js"]) yaz(path.join(ork, "araclar", f), ic("araclar", f), "ic");
+for (const f of ["bakim.js", "ders-tara.js", "nobet.js", "rol.js", "saglik.js"]) yaz(path.join(ork, "araclar", f), ic("araclar", f), "ic");
 yaz(path.join(ork, "SURUM"), SURUM + "\n", "ic");
 // Dil paketi: betiklerin bu projede kullanacağı adlar ve metinler.
 yaz(path.join(ork, "dil.json"), dilIc("dil.json"), "ic");
@@ -337,8 +368,12 @@ if (rapor.notlar.length) liste(m("kur.b.not", "NOT:"), rapor.notlar);
 // Kurucu kendi işini kendi kontrol eder: ayrı bir doğrulama adımı yoktur. Sağlamsa tek satır, kusur varsa yalnız kusurlu satırlar yazılır.
 if (!prova && !rapor.cakisan.length) {
   const s = require("child_process").spawnSync(process.execPath, [path.join(ork, "araclar", "saglik.js"), hedef], { cwd: hedef, encoding: "utf8", timeout: 60000 });
-  if (s.status === 0) console.log("\n" + m("kur.saglam", "Kurulum sağlam."));
-  else {
+  if (s.status === 0) {
+    console.log("\n" + m("kur.saglam", "Kurulum sağlam."));
+    // Onay listesiyle ilgili uyarı kurulumda gösterilir: liste projeye uydurulurken görülmesi gerekir.
+    const onayUyari = String(s.stdout || "").split(/\r?\n/).filter((x) => x.includes("onay.desenler"));
+    if (onayUyari.length) console.log(onayUyari.map((x) => "  " + x.trim()).join("\n"));
+  } else {
     const KALDI = m("saglik.kaldi", "KALDI");
     const satirlar = String(s.stdout || "").split(/\r?\n/);
     const kusur = satirlar.filter((x, i) => x.startsWith(KALDI) || (/^\s{7}/.test(x) && (satirlar[i - 1] || "").startsWith(KALDI)));

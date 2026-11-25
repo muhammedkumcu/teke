@@ -13,4 +13,4 @@ None yet: run, test, build, deploy.
 Not defined yet.
 
 ## Approvals and permissions specific to this project
-The default approval list applies (pushing to the remote, deploying, writing to a remote database). A change is written here and in `.claude/teke/ayar.json` → `onay.desenler` (the approval patterns).
+The default approval list applies (pushing to the remote, deploying, writing to a remote database, changing live settings). A change is written here and in `.claude/teke/ayar.json` → `onay.desenler` (the approval patterns).

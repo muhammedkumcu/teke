@@ -7,7 +7,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { girdiOku, projeKoku, reddet, guvenli, oku, katla, yalin, rolBul, durumOku, durumYaz, kullaniciSozu, kullaniciSatiriMi, DEVIR_SATIRI, m } = require("./ortak");
+const { girdiOku, projeKoku, reddet, cikar, guvenli, oku, katla, yalin, rolBul, durumOku, durumYaz, kullaniciSozu, kullaniciSatiriMi, DEVIR_SATIRI, m } = require("./ortak");
 
 // "Kullanıcının sözü" başlığı altındaki alıntı öbeklerini döndürür (her öbek art arda gelen "> " satırlarıdır);
 // bölüm yoksa null.
@@ -44,35 +44,50 @@ function uymayanlar(obekler, metin) {
   return yok;
 }
 
-// Oturum kaydında kullanıcının KENDİ yazdığı mesajların yalın (yalnız harf ve rakam) birleşimi.
-// Compact özeti, başka oturumdan gelen mesajlar ve araç çıktıları sayılmaz. Süre sınırı aşılırsa null.
-function konusma(kayitYolu, sinirMs) {
+// Alıntıları oturum kaydında, kullanıcının KENDİ yazdığı mesajlarda arar (compact özeti, başka oturumdan gelen
+// mesajlar ve araç çıktıları sayılmaz). Kayıt SONDAN başa doğru okunur: devredilen söz çoğunlukla son mesajlardadır,
+// alıntıların hepsi bulununca okuma biter; yüzlerce MB'lik kayıtta da çabuk sonuç verir.
+// Döner: { yok: bulunamayan alıntılar, tam: kaydın tamamı okundu mu (süre sınırına takılmadıysa true) }.
+function kayittaAra(kayitYolu, obekler, sinirMs) {
   const bas = Date.now();
+  const boyut = fs.statSync(kayitYolu).size;
   const fd = fs.openSync(kayitYolu, "r");
-  const tampon = Buffer.alloc(4 * 1024 * 1024);
+  const PARCA = 4 * 1024 * 1024;
   const parcalar = [];
-  let konum = 0;
-  let artik = "";
+  let konum = boyut;
+  let artik = Buffer.alloc(0); // parçanın başında yarım kalan satır (baytlar olarak: çok baytlı harf bölünmesin)
+  let yok = uymayanlar(obekler, "");
   const isle = (x) => {
     if (!kullaniciSatiriMi(x)) return;
     let o;
     try { o = JSON.parse(x); } catch { return; }
-    const m = kullaniciSozu(o);
-    if (m) parcalar.push(yalin(m));
+    const s = kullaniciSozu(o);
+    if (s) parcalar.push(yalin(s));
   };
   try {
-    for (;;) {
-      if (Date.now() - bas > sinirMs) return null;
-      const n = fs.readSync(fd, tampon, 0, tampon.length, konum);
-      if (!n) break;
-      konum += n;
-      const satirlar = (artik + tampon.toString("utf8", 0, n)).split("\n");
-      artik = satirlar.pop();
-      for (const x of satirlar) isle(x);
+    while (konum > 0 && yok.length) {
+      if (Date.now() - bas > sinirMs) return { yok, tam: false };
+      const n = Math.min(PARCA, konum);
+      const tampon = Buffer.alloc(n);
+      fs.readSync(fd, tampon, 0, n, konum - n);
+      konum -= n;
+      const hepsi = Buffer.concat([tampon, artik]);
+      let metin;
+      if (konum > 0) {
+        const ilkSatirSonu = hepsi.indexOf(0x0a);
+        if (ilkSatirSonu < 0) { artik = hepsi; continue; } // tek satır parçadan uzun: bir önceki parçayla birleşecek
+        artik = hepsi.subarray(0, ilkSatirSonu);
+        metin = hepsi.toString("utf8", ilkSatirSonu + 1);
+      } else {
+        artik = Buffer.alloc(0);
+        metin = hepsi.toString("utf8");
+      }
+      const once = parcalar.length;
+      for (const x of metin.split("\n")) isle(x);
+      if (parcalar.length > once) yok = uymayanlar(obekler, parcalar.join("\n"));
     }
-    if (artik) isle(artik);
   } finally { fs.closeSync(fd); }
-  return parcalar.join("\n");
+  return { yok, tam: true };
 }
 
 if (require.main === module) guvenli(async () => {
@@ -109,9 +124,12 @@ if (require.main === module) guvenli(async () => {
   }
   if (bos || !g.transcript_path || !fs.existsSync(g.transcript_path)) process.exit(0);
 
-  const metin = konusma(g.transcript_path, 7000);
-  if (metin === null) process.exit(0); // kayıt çok büyük, süre yetmedi: engelleme
-  const yok = uymayanlar(obekler, metin);
+  const { yok, tam } = kayittaAra(g.transcript_path, obekler, 7000);
+  if (yok.length && !tam) {
+    // Kayıt çok büyük, süre yetmedi: alıntı eski bir mesajda olabilir. Engellenmez ama sessiz de geçilmez.
+    cikar({ systemMessage: m("devir.atlandi", "[teke] Söz denetimi tamamlanamadı: oturum kaydı çok büyük, {n} alıntı kaydın okunabilen son bölümünde bulunamadı. İş tarifi gönderildi; alıntıların kullanıcının sözüyle aynı olduğunu sen doğrula.", { n: yok.length }) });
+    process.exit(0);
+  }
   if (yok.length) {
     bir_kez(m("devir.uymuyor", "\"{dosya}\" içindeki şu alıntı(lar) kullanıcının bu konuşmadaki mesajlarında bu hâliyle geçmiyor:", { dosya: anahtar }) + "\n" + yok.slice(0, 4).map((a) => `- "${a.length > 160 ? a.slice(0, 160) + "…" : a}"`).join("\n") + "\n" +
       m("devir.uymuyor.yap", "Kullanıcının sözünü özetleme, düzeltme; konuşmadan aynen kopyala (yazım hataları dahil). Kendi çıkarımın \"Yorumum\" bölümüne gider. Söz bir belgeden ya da önceki bir oturumdan geliyorsa alıntının sonuna \"(kaynak: <dosya>)\" yaz. Alıntı gerçekten aynen kullanıcının sözüyse ve bu uyarı yanlışsa aynı tarifi yeniden gönder; ikinci kez durdurulmaz."));
@@ -119,4 +137,4 @@ if (require.main === module) guvenli(async () => {
   process.exit(0);
 });
 
-module.exports = { sozler, uymayanlar };
+module.exports = { sozler, uymayanlar, kayittaAra };

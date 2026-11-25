@@ -42,7 +42,7 @@ if (kitKaynagi && fs.existsSync(path.join(kitKaynagi, "SURUM"))) {
 // dosyalar
 const gerekli = [
   ...["ortak.js", "oturum-baslangici.js", "istem.js", "baglam-izle.js", "ajan-kapisi.js", "devir-kapisi.js", "komut-kapisi.js"].map((f) => ".claude/teke/kancalar/" + f),
-  ...["bakim.js", "ders-tara.js", "nobet.js"].map((f) => ".claude/teke/araclar/" + f),
+  ...["bakim.js", "ders-tara.js", "nobet.js", "rol.js"].map((f) => ".claude/teke/araclar/" + f),
   ".claude/teke/package.json", ".claude/rules/teke.md",
   ...P.beceriler.map((b) => `.claude/skills/${b}/SKILL.md`),
   path.posix.join(ayar.devirKlasoru || P.devirKlasoru, P.sablonAdi),
@@ -62,6 +62,29 @@ for (const a of P.ajanlar) {
   else if (((ayar.ajan || {}).yasakModeller || []).some((y) => model.toLowerCase().includes(String(y).toLowerCase()))) ajanSorun.push(m("saglik.ajan.yasak", "{ad}: yasak model ({model})", { ad: a, model }));
 }
 kontrol(m("saglik.ajanlar", "yardımcı tanımları ({n} yardımcı, modeli sabit)", { n: P.ajanlar.length }), ajanSorun.length === 0, ajanSorun.join("; "));
+
+// Onay listesi: betik yalnız yazılan komutu görür, package.json betiğinin içini görmez. İçinde onay isteyen bir komut
+// çalıştıran ("uretim": "wrangler deploy") ya da adı yayına benzeyen betik listede yakalanmıyorsa bildirilir.
+{
+  const desenler = ((ayar.onay || {}).desenler || []).map((d) => { try { return new RegExp(d.desen, "i"); } catch { return null; } }).filter(Boolean);
+  const paketler = ["package.json"];
+  for (const ust of ["apps", "packages", "services", "workers"]) {
+    try { for (const a of fs.readdirSync(path.join(kok, ust))) paketler.push(path.posix.join(ust, a, "package.json")); } catch {}
+  }
+  const YAYIN_ADI = /(^|[^a-z])(deploy|publish|yayinla)([^a-z]|$)/i;
+  const kacan = [];
+  for (const p of desenler.length ? paketler : []) {
+    let pj = null;
+    try { pj = jsonOku(path.join(kok, p)); } catch { continue; }
+    for (const [ad, govde] of Object.entries((pj && pj.scripts) || {})) {
+      if (typeof govde !== "string") continue;
+      if (!YAYIN_ADI.test(ad) && !desenler.some((d) => d.test(govde))) continue;
+      const cagrilar = [`pnpm run ${ad}`, `npm run ${ad}`, `yarn ${ad}`, `bun run ${ad}`, `pnpm ${ad}`];
+      if (!cagrilar.some((c) => desenler.some((d) => d.test(c)))) kacan.push((p === "package.json" ? "" : path.posix.dirname(p) + ": ") + ad);
+    }
+  }
+  if (kacan.length) uyari(m("saglik.onay.kacan", "onay listesinin yakalamadığı, yayına benzeyen betik(ler): {liste}. Onay isteyecekse ayar.json → onay.desenler listesine ekle.", { liste: kacan.slice(0, 8).join(", ") + (kacan.length > 8 ? ", …" : "") }));
+}
 
 // betik kaydı ve gerçekten çalışıyor mu
 const setAd = ayar.gitDisi ? "settings.local.json" : "settings.json";
@@ -96,7 +119,7 @@ if (set) {
 }
 
 // araçlar yükleniyor mu
-for (const a of ["bakim.js", "ders-tara.js", "nobet.js"]) {
+for (const a of ["bakim.js", "ders-tara.js", "nobet.js", "rol.js"]) {
   const r = spawnSync(process.execPath, ["--check", path.join(ork, "araclar", a)], { encoding: "utf8" });
   kontrol(m("saglik.sozdizimi", "{ad} sözdizimi", { ad: a }), r.status === 0, (r.stderr || "").slice(0, 200));
 }

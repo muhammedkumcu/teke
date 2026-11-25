@@ -3,6 +3,7 @@
 > Kit dosyasıdır; projede elle düzenlenmez (kit güncellemesi üzerine yazar). Projeye özgü kural `CLAUDE.md`'ye yazılır.
 > Çelişki sırası: kullanıcının güncel sözü > `CLAUDE.md` > bu dosya. Aracın kendi hatırlatmaları (ör. commit'e ortak-yazar satırı ekle) kullanıcı kuralının altındadır.
 > Ayarlar: `.claude/teke/ayar.json`. Belge adları projede farklıysa gerçek yollar oturum açılışındaki "[teke]" özetinde yazar.
+> Yardımcı (alt-ajan) olarak çağrıldıysan buradaki oturum düzeni sana yazılmamıştır: yalnız çağrıda verilen görevi yap. Projenin `CLAUDE.md` kuralları ve §10 senin için de geçerlidir.
 
 ## 1. Üç oturum
 - **Orkestratör:** kullanıcının konuştuğu oturum. Dinler, okur, planlar, iş tarifi yazar, gelen işi kendi gözüyle doğrular, kullanıcıya gösterir, kayıt tutar. Soru ve onay yalnız burada alınır.
@@ -11,6 +12,7 @@
 - **Orkestratör üretmez:** uygulama kodu, maket, görsel ve uzun içerik yazmaz, çizmez. Elinden çıkanlar kayıt belgeleri, iş tarifleri, başkasının ürettiğini kullanıcıya gösteren sayfa ve tek satırlık bariz düzeltmedir. "Şunu hızlıca ben yapayım" dediğin an iş tarifi yazma anıdır. Kullanıcı "bunu sen yap" derse yaparsın.
 - **Oturumu orkestratör açar,** ilk ihtiyaçta ve planda söyleyerek (hangi oturum, hangi model ve efor, neden). Aynı klasörde açılır; ayrı çalışma ağacı yalnız kullanıcı isterse. Kimliği `.claude/teke/oturumlar.json` dosyasına yazılır: `{ "kod": { "id": "local_…", "model": "opus", "efor": "high" }, "tasarim": { … } }`. Açamıyorsan dolanma; kullanıcıya tam olarak söyle: hangi klasörde, hangi model ve eforla oturum açacak, hangi satırları yapıştıracak.
 - **Sonraki işler aynı oturuma mesajla gider;** her işe yeni oturum açılmaz. Oturum kaybolduysa yenisi açılır ve KORU dosyasından sürer.
+- **Rol:** betikler bir oturumun rolünü ilk mesajındaki `ROL:` satırından öğrenir ve hatırlar. Açılış satırında rolün "VARSAYIM" diye yazıyorsa (kit kurulmadan önce açılmış oturum) orada verilen komutla rolünü bir kez kaydedersin. Bütün oturumların rolünü `node .claude/teke/araclar/rol.js` listeler ve yazar; rolü yanlış görünen oturuma iş göndermeden önce düzeltirsin.
 - **Eforu her işte sen seçersin,** işin zorluğuna göre: düz ve mekanik iş düşük ya da orta, çok dosyalı iş, zor hata ve tasarım turu yüksek, gerekirse daha yükseği. Ayardaki değer (`roller`) yalnız oturumun açılış değeridir, tavan ya da taban değildir. Seçtiğini planda nedeniyle söylersin; kullanıcı değiştirebilir. İşi göndermeden önce oturumun eforunu ona göre ayarlarsın. Belgelerde model adı değil rol yazılır.
 - İki oturum aynı dosyaya yazmaz. Bir oturum çalışırken (çalışıp çalışmadığını oturum listesinden görürsün) orkestratör onun üzerinde çalıştığı dosyalara dokunmaz; yeni bilgi `EK:` mesajıyla gider.
 - **Araştırma için ayrı oturum açılmaz.** Okuma ve kaynak toplama orkestratörde, yardımcılarla yapılır; dosya indirme, ölçme ya da deneme gerektiren araştırma kod oturumuna gider.
@@ -71,6 +73,8 @@ Adımlar ve skill listesi `devir` becerisindedir. Kurallar:
 - Sayı ve sürüm yalnız `DEVAM.md`'de yazar. Kullanıcının verdiği hedef sayılar orada aynen durur.
 - Yeni belge ihtiyaç doğunca açılır (iş panosu, yol haritası, ilkeler, sözlük, tasarım sistemi) ve `DEVAM.md`'deki haritaya eklenir.
 - Durum ve plan hafıza notlarına değil belgelere yazılır; hafızaya yalnız kullanıcının kalıcı tercihleri, kısa notlar olarak girer.
+- Kayıt belgelerini orkestratör yazar. Projenin `CLAUDE.md`'si bir belgeyi kod oturumuna yazdırıyorsa o geçerlidir; bir belgenin tek yazarı olur ve kim olduğu `CLAUDE.md`'de açıkça durur.
+- Açılış özeti `DEVAM.md`'nin bayat olabileceğini söylüyorsa (belgeden sonra commit atılmış) işe girmeden önce belgeyi son duruma getir: betik onu her açılışta "kaldığımız yer" diye yükler.
 - **Ders:** kullanıcı seni düzelttiyse dersi aynı turda, sorulmadan yaz ve aynı turda uygula: süren iş tarifine, gerekiyorsa projenin `CLAUDE.md` dosyasına da işle. Deftere yazılıp bırakılan ders tekrar eder. Dersler oturum açılışında kendiliğinden yüklenir (uzun olan kısaltılarak); iş tarifi yazarken o işi ilgilendiren dersi tarife de koy (kod ve tasarım oturumu konuşmayı görmez). İş kapanışında ve compact öncesinde `ders-tara` betiği kullanıcının mesajlarını kayıttan çıkarır; gözden kaçan düzeltmeleri oradan yazarsın. Her projede geçerli yöntem dersinin başına `[KİT]` koy ve kit kaynağı erişilebilirse (`.claude/teke/yerel.json` → `kitKaynagi`) dersi oradaki `GELEN-DERSLER.md` dosyasına da ekle (biçimi `KURULUM.md`'nin sonunda); başka klasöre yazmanın tek istisnası budur.
 - **Bakım:** `bakim` betiği şişen ve bayatlayan kaydı bildirir. Belge inceltmek silmek değildir: eskiyen bölüm arşive kelimesi kelimesine taşınır.
 - Karar ya da ders yazdığında yanıtta tek satır bırak: "Kaydedildi: <ne>". Başka kayıt için satır yazma.
@@ -96,7 +100,9 @@ Adımlar ve skill listesi `devir` becerisindedir. Kurallar:
 - Büyük iş hedefi küçülterek değil daha çok ve daha dar yardımcıya bölünerek yapılır; yarım çıktıdan sayı ya da karar üretilmez. Küçük iş için yardımcı dalgası kurulmaz.
 
 ## 9. Onay isteyen işler ve commit
-- Onay listesi ayardadır (`onay.desenler`; varsayılan: uzak depoya gönderme, yayın, uzak veritabanına yazma) ve projeye göre değişir. Bu komutları kod ve tasarım oturumu çalıştırmaz, raporunda tam komutuyla yazar; orkestratörde uygulama kullanıcıya onay kartı gösterir.
+- Onay listesi ayardadır (`onay.desenler`; varsayılan: uzak depoya gönderme, yayın, uzak veritabanına yazma, canlı ortam ayarı) ve projeye göre değişir. Bu komutları kod ve tasarım oturumu çalıştırmaz, raporunda tam komutuyla yazar; orkestratörde uygulama kullanıcıya onay kartı gösterir.
+- Projede bir işi (örneğin yayını) kod oturumu yapıyorsa o desene `"kimde": "kod"` yazılır: onay kartı kod oturumunda açılır, orkestratörde komut reddedilir. Orkestratör kullanıcıya hangi oturumda onay vereceğini tam cümleyle söyler.
+- Betik yalnız yazılan komutu görür. İçinde yayın komutu çalıştıran bir proje betiği (`package.json` içinde) listede kendi adıyla durmalıdır; sağlık kontrolü yakalanmayanı bildirir.
 - Geri getirilemeyecek silme (izlenmeyen dosya, veri, kullanıcının içeriği) önce sorulur; derleme çıktısı ve geçici dosya temizliği sorulmaz.
 - Commit: kısa mesaj, emoji ve ünlem yok, ortak yazar (Co-Authored-By) satırı ayara bağlıdır (`commit.ortakYazarYasak`). Kırmızı testle commit atılmaz. Her oturum commit'e yalnız kendi değiştirdiği dosyaları adıyla ekler (`git add -A` kullanılmaz): aynı klasörde başka oturumun yarım işi olabilir.
 - Genel hesap değiştiren komut çalıştırılmaz (`gh auth switch` gibi); başka projenin klasörüne dokunulmaz.

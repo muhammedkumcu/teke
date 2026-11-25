@@ -6,7 +6,7 @@
 // Söyleyecek bir şey yoksa hiçbir şey eklemez.
 const fs = require("fs");
 const path = require("path");
-const { girdiOku, projeKoku, ayarOku, baglamEkle, guvenli, rolBul, metindenRol, devirMesajiMi, durumOku, durumYaz, baglamOlc, baglamHaberi, katla, belgeAdi, bekleyenler, kullanicidanMi, paket, m } = require("./ortak");
+const { girdiOku, projeKoku, ayarOku, baglamEkle, guvenli, rolAyrinti, rolSatiri, rolBasligi, rolAcik, metindenRol, devirMesajiMi, devirleBasliyor, durumOku, durumYaz, baglamOlc, baglamHaberi, katla, belgeAdi, bekleyenler, kullanicidanMi, paket, m } = require("./ortak");
 
 // Mesajın tamamı bir "sürdür" sözü mü: devam, devam et, tamam devam, sürdür, kaldığın yerden devam… ("devam etme",
 // "neden devam etmedin" gibi içinde yalnızca "devam" geçen mesajlar sayılmaz). katla() sonrası metne uygulanır.
@@ -25,24 +25,47 @@ guvenli(async () => {
 
   // 1) rol
   const istem = String(g.prompt || "");
-  const yazili = metindenRol(istem);
   const onceki = d.rol;
-  // Rol bir kez belirlenir; sonradan yalnız bu oturuma gelen bir devir mesajı (DEVİR: + ROL:) değiştirebilir.
-  if (yazili && (!d.rol || devirMesajiMi(istem))) d.rol = yazili;
-  if (!d.rol) d.rol = rolBul(g, kok);
+  // Açıkça verilmiş rolü yalnız bu oturuma gelen bir devir mesajı (DEVİR: + ROL:) ya da rol aracı değiştirir.
+  // Çıkarılmış ya da varsayılmış rolü, ilk satırı "ROL: …" olan mesaj da düzeltir (kit kurulmadan önce açılmış oturum).
+  // Devir mesajı başka oturumdan gelir. Kullanıcının kendi yazdığı mesajda geçen DEVİR ve ROL satırları (ör. "şunu kod
+  // oturumuna gönder: …") orkestratörün rolünü değiştirmez; kullanıcı devri elle yapıştırıyorsa (oturumu kendisi açtıysa)
+  // mesaj DEVİR satırıyla başlar ve yalnız rolü açıkça verilmemiş oturumda geçerlidir.
+  const insandan = kullanicidanMi(istem);
+  if (devirMesajiMi(istem) && (!insandan || (!rolAcik(d) && devirleBasliyor(istem)))) { d.rol = rolSatiri(istem); d.rolKaynak = "satir"; }
+  else if (!rolAcik(d)) {
+    const bas = rolBasligi(istem);
+    if (bas) { d.rol = bas; d.rolKaynak = "satir"; }
+    else if (!d.rol) {
+      const a = rolAyrinti(g, kok);
+      if (a.kaynak !== "varsayim") { d.rol = a.rol; d.rolKaynak = a.kaynak; }
+      else if (a.ilk && a.ilk.yok) {
+        // Kayıtta henüz mesaj yok: bu mesaj oturumun ilk mesajıdır.
+        const r = metindenRol(istem);
+        d.rol = r || "orkestrator";
+        d.rolKaynak = r ? (rolSatiri(istem.slice(0, 8000)) ? "satir" : "kayit") : "kayit";
+      }
+    }
+  }
+  const rol = d.rol || "orkestrator";
   if (g.transcript_path) d.kayit = g.transcript_path;
-  if (d.rol !== "orkestrator" && d.rol !== onceki) {
-    p.push(m("istem.rol", "[teke] Bu oturumun rolü: {rol}. Kullanıcıya soru sorma; sorun olursa orkestratöre SORU: mesajı gönder. Onay isteyen komutları çalıştırma, raporunda yaz. Kayıt belgelerine dokunma. Raporunu iş tarifinin sonuna yaz ve orkestratöre RAPOR: mesajı gönder.", { rol: paket(kok).rolAdlari[d.rol] }));
+  if (rol !== "orkestrator" && rol !== onceki) {
+    p.push(m("istem.rol", "[teke] Bu oturumun rolü: {rol}. Kullanıcıya soru sorma; sorun olursa orkestratöre SORU: mesajı gönder. Betiğin reddettiği komutu çalıştırma, raporunda yaz. Kayıt belgelerini (durum, karar, ders) orkestratör yazar; proje yasası bir belgeyi sana yazdırıyorsa o geçerlidir. Raporunu iş tarifinin sonuna yaz ve orkestratöre RAPOR: mesajı gönder.", { rol: paket(kok).rolAdlari[rol] }));
+  }
+  // Rol bilinmiyor (kit kurulmadan önce açılmış, compact edilmiş oturum): bir kez söylenir, oturum rolünü kendisi kaydeder.
+  if (!d.rol && !d.rolSoruldu) {
+    d.rolSoruldu = true;
+    p.push(m("istem.rol.bilinmiyor", "[teke] Bu oturumun rolü kayıtlı değil; ilk mesajı görülemediği için orkestratör varsayılıyor. Hangi oturum olduğunu biliyorsun: rolünü bir kez kaydet, sonra işine dön: node .claude/teke/araclar/rol.js {id} orkestrator   (kod oturumuysan sona kod, tasarım oturumuysan tasarim yaz)", { id: g.session_id }));
   }
 
   // 2) bağlam
-  const haber = baglamHaberi(ayar, d, g.transcript_path ? baglamOlc(g.transcript_path, ayar) : null, d.rol);
+  const haber = baglamHaberi(ayar, d, g.transcript_path ? baglamOlc(g.transcript_path, ayar) : null, rol);
   if (haber) p.push(haber);
   d.sonOlcum = Date.now();
 
   // 3) ders taraması hatırlatması (yalnız orkestratörde; başka oturumdan ya da uygulamadan gelen mesaj sayılmaz)
-  const kullanicidan = kullanicidanMi(istem);
-  if (d.rol === "orkestrator" && kullanicidan) {
+  const kullanicidan = insandan;
+  if (rol === "orkestrator" && kullanicidan) {
     d.mesajSayisi = (d.mesajSayisi || 0) + 1;
     const esik = (ayar.ders && ayar.ders.hatirlatMesaj) || 25;
     if (d.mesajSayisi >= esik && d.mesajSayisi % esik === 0) {
@@ -51,7 +74,7 @@ guvenli(async () => {
   }
 
   // 4) bekleyenler: kullanıcı "devam" dediyse ondan beklenenler gösterilmeden sürülmez
-  if (d.rol === "orkestrator" && kullanicidan && DEVAM_SOZU.test(katla(istem))) {
+  if (rol === "orkestrator" && kullanicidan && DEVAM_SOZU.test(katla(istem))) {
     const liste = bekleyenler(kok, ayar);
     const ad = belgeAdi(kok, ayar, "DEVAM.md");
     if (liste && liste.length) {

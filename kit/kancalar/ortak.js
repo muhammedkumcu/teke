@@ -286,9 +286,13 @@ function durumYaz(kok, oturum, d) {
 // ---------- rol ----------
 // Rol sırasıyla şuradan bulunur:
 //  1) oturum durum dosyasında kayıtlıysa o (bir kez bulunan rol hatırlanır);
-//  2) oturumun ilk kullanıcı mesajında "ROL: kod | tasarım | orkestratör" (ya da "ROLE: code | design | orchestrator") satırı varsa o;
-//  3) ilk mesaj, uygulamanın başka oturumun açtığı oturuma koyduğu başlığı ya da "DEVİR: …md" ("HANDOFF: …md") satırını taşıyorsa "kod";
-//  4) hiçbiri değilse "orkestrator" (kullanıcının doğrudan konuştuğu oturum).
+//  2) oturumun ilk mesajında "ROL: kod | tasarım | orkestratör" (ya da "ROLE: code | design | orchestrator") satırı varsa o;
+//  3) ilk mesaj başka bir oturumdan geldiyse ya da "DEVİR: …md" ("HANDOFF: …md") satırını taşıyorsa "kod";
+//  4) ilk mesajı kullanıcı yazdıysa "orkestrator" (kullanıcının doğrudan konuştuğu oturum);
+//  5) ilk mesaj bilinmiyorsa (kit kurulmadan önce açılmış ve compact edilmiş oturum) "orkestrator" VARSAYILIR ve kaydedilmez.
+// Rolün kaynağı da tutulur (rolKaynak): "elle" (rol aracıyla yazıldı) · "satir" (ROL satırı) · "kayit" (ilk mesajdan çıkarıldı) ·
+// "varsayim". Açıkça verilmiş rolü (elle, satir) yalnız bir devir mesajı ya da rol aracı değiştirir; çıkarılmış ya da
+// varsayılmış rolü, ilk satırı "ROL: …" olan herhangi bir mesaj düzeltir.
 // Rolün iç adı her dilde aynıdır: orkestrator | kod | tasarim.
 // Etiket büyük harfle ve satır başında yazılır; değer tam bir sözcüktür. Böylece sıradan bir cümle ("Role: code reviewer",
 // "rol: kodlama", satır başında "handoff: notes.md") oturumun rolünü değiştirmez.
@@ -296,7 +300,8 @@ const ROL_SATIRI = /(?:^|\n|>)[ \t]*(?:ROLE|ROL)[ \t]*:[ \t]*([\p{L}]+)(?![\p{L}
 const ROL_DEGERI = { kod: "kod", code: "kod", tasarim: "tasarim", design: "tasarim", orkestratör: "orkestrator", orkestrator: "orkestrator", orchestrator: "orkestrator" };
 // "DEVİR: <yol>.md" satırı; yol boşluk içerebilir ve tırnak içinde olabilir. 1. grup dosya yoludur.
 const DEVIR_SATIRI = /(?:^|\n|>)[ \t]*(?:DEV[İI]R|HANDOFF)[ \t]*:[ \t]*[`"']?([^\n`"']+?\.md)(?![\w.])/;
-const BASKA_OTURUM = /Background \(from the session that started this one\)/i;
+// Başka oturumdan gelen mesajın uygulamaca eklenen başlığı: oturumu açan mesajda ya da var olan oturuma gönderilen mesajda.
+const BASKA_OTURUM = /Background \(from the session that started this one\)|Another Claude session sent a message|<\\?cross-session-message\b/i;
 // Metindeki ilk geçerli rol satırının rolü (iç adıyla); yoksa null.
 function rolSatiri(metin) {
   for (const e of String(metin || "").matchAll(ROL_SATIRI)) {
@@ -305,6 +310,23 @@ function rolSatiri(metin) {
   }
   return null;
 }
+// Mesajın İLK dolu satırı "ROL: …" ise o rol (uygulamanın eklediği sarmalayıcı satırlar atlanır); değilse null.
+// Bilerek yazılmış rol başlığıdır: metnin ortasında geçen "ROL:" satırı (yapıştırılmış bir belge) sayılmaz.
+function rolBasligi(metin) {
+  for (const s of String(metin || "").slice(0, 4000).split(/\r?\n/)) {
+    const t = s.trim();
+    if (!t || /^Another Claude session sent a message/i.test(t) || /^Background \(from the session/i.test(t) || /^<[^>]*>$/.test(t)) continue;
+    const e = t.replace(/^<[^>]*>\s*/, "").match(/^(?:ROLE|ROL)[ \t]*:[ \t]*([\p{L}]+)(?![\p{L}\p{N}_-])/u);
+    return (e && ROL_DEGERI[katla(e[1])]) || null;
+  }
+  return null;
+}
+// Kayıtlı rolün kaynağı. 2.3.0 ve öncesinin durum dosyasında kaynak yazmaz: orkestratör ilk mesajdan çıkarılmış,
+// kod ve tasarım ROL satırıyla verilmiş sayılır.
+function rolKaynagi(d) {
+  return d && d.rol ? d.rolKaynak || (d.rol === "orkestrator" ? "kayit" : "satir") : "varsayim";
+}
+const rolAcik = (d) => ["elle", "satir"].includes(rolKaynagi(d));
 // Mesaj metninden rol: "ROL:" satırı varsa o; yoksa başka oturumdan gelen iş mesajıysa "kod"; hiçbiri değilse null.
 function metindenRol(metin) {
   const t = String(metin || "").slice(0, 8000);
@@ -314,6 +336,11 @@ function metindenRol(metin) {
 function devirMesajiMi(metin) {
   const t = String(metin || "").slice(0, 8000);
   return DEVIR_SATIRI.test(t) && !!rolSatiri(t);
+}
+// Mesajın ilk dolu satırı "DEVİR: …" ("HANDOFF: …") mı?
+function devirleBasliyor(metin) {
+  const ilk = String(metin || "").split(/\r?\n/).find((s) => s.trim());
+  return !!ilk && /^[ \t]*(?:DEV[İI]R|HANDOFF)[ \t]*:/.test(ilk);
 }
 // Kayıt satırı kullanıcı mesajı taşıyor olabilir mi (ayrıştırmadan önce hızlı eleme)?
 function kullaniciSatiriMi(s) {
@@ -342,26 +369,50 @@ function kullaniciSozu(o) {
     .trim();
   return !s || KULLANICI_DEGIL.test(s) ? "" : s;
 }
-function rolBul(girdi, kok) {
+// Oturum kaydının ilk mesajı: rolün kanıtı. Döner: { metin } · { yok: true } (kayıtta henüz mesaj yok: yeni oturum) ·
+// { bilinmiyor: true } (kayıt compact özetiyle başlıyor ya da ilk mesaj okunan parçanın dışında: asıl ilk mesaj görülemez).
+// Başka oturumun gönderdiği mesaj kayıtta "isMeta" ile durur ve mesaj sayılır; uygulamanın öteki satırları sayılmaz.
+const MESAJ_DEGIL = /^(<command-name>|<local-command|<task-notification|<side-sessions-event|<ci-monitor-event|\[Request interrupted|Caveat: The messages below|<bash-|<user-prompt-submit-hook)/;
+function ilkMesaj(yol) {
   try {
-    const d = durumOku(kok, girdi.session_id);
-    if (d.rol) return d.rol;
-    const yol = girdi.transcript_path;
-    if (!yol || !fs.existsSync(yol)) return "orkestrator";
+    if (!yol || !fs.existsSync(yol)) return { yok: true };
+    const boyut = fs.statSync(yol).size;
     const fd = fs.openSync(yol, "r");
-    const tampon = Buffer.alloc(262144);
+    const tampon = Buffer.alloc(Math.min(boyut, 262144));
     const n = fs.readSync(fd, tampon, 0, tampon.length, 0);
     fs.closeSync(fd);
     for (const s of tampon.toString("utf8", 0, n).split("\n")) {
       if (!s.includes('"type":"user"')) continue;
       let o;
       try { o = JSON.parse(s); } catch { continue; }
-      const metin = kullaniciMetni(o);
-      if (!metin.trim()) continue;
-      return metindenRol(metin) || "orkestrator";
+      if (!o || o.type !== "user" || o.isSidechain || !o.message) continue;
+      if (o.isCompactSummary) return { bilinmiyor: true };
+      const c = o.message.content;
+      const metin = (typeof c === "string" ? c : Array.isArray(c) ? c.filter((b) => b && b.type === "text").map((b) => b.text).join("\n") : "").trim();
+      if (!metin || MESAJ_DEGIL.test(metin)) continue;
+      if (/^This session is being continued from a previous conversation/.test(metin)) return { bilinmiyor: true };
+      if (o.isMeta && !BASKA_OTURUM.test(metin.slice(0, 2000))) continue;
+      return { metin };
     }
+    return boyut > n ? { bilinmiyor: true } : { yok: true };
+  } catch { return { bilinmiyor: true }; }
+}
+// Rol ve kaynağı: { rol, kaynak, ilk } (ilk: kaydın ilk mesajına bakıldıysa sonucu).
+function rolAyrinti(girdi, kok) {
+  try {
+    const d = durumOku(kok, girdi.session_id);
+    if (d.rol) return { rol: d.rol, kaynak: rolKaynagi(d) };
+    const ilk = ilkMesaj(girdi.transcript_path);
+    if (!ilk.metin) return { rol: "orkestrator", kaynak: "varsayim", ilk };
+    const t = ilk.metin.slice(0, 8000);
+    const yazili = rolSatiri(t);
+    if (yazili) return { rol: yazili, kaynak: "satir", ilk };
+    return { rol: BASKA_OTURUM.test(t) || DEVIR_SATIRI.test(t) ? "kod" : "orkestrator", kaynak: "kayit", ilk };
   } catch {}
-  return "orkestrator";
+  return { rol: "orkestrator", kaynak: "varsayim", ilk: { bilinmiyor: true } };
+}
+function rolBul(girdi, kok) {
+  return rolAyrinti(girdi, kok).rol;
 }
 
 // ---------- bağlam ölçümü ----------
@@ -441,7 +492,7 @@ function guvenli(ana) {
 
 module.exports = {
   girdiOku, oku, jsonOku, jsonDene, katla, yalin, projeKoku, ayarOku, belgeYolu, belgeAdi, devirKlasoru, arsivKlasoru,
-  reddet, kullaniciyaSor, baglamEkle, durumYolu, durumOku, durumYaz, rolBul, metindenRol, devirMesajiMi, kullaniciMetni, kullaniciSozu, kullaniciSatiriMi,
+  reddet, kullaniciyaSor, baglamEkle, cikar, durumYolu, durumOku, durumYaz, rolBul, rolAyrinti, rolSatiri, rolBasligi, rolKaynagi, rolAcik, ROL_DEGERI, metindenRol, devirMesajiMi, devirleBasliyor, kullaniciMetni, kullaniciSozu, kullaniciSatiriMi,
   baglamOlc, baglamHaberi, DEVIR_SATIRI, guvenli, VARSAYILAN_AYAR, bolum, durumBolumu, koruDosyasi, bekleyenler, kullanicidanMi,
   paket, paketAyarla, paketAdi, m, bayraklariCevir, VARSAYILAN_PAKET, TARIF_DEGIL, KAPANDI_SATIRI, RAPOR_BASLIGI,
 };

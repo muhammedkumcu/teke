@@ -44,7 +44,7 @@
 ## İşi yapan oturum için (her tarifte aynı)
 1. Bu dosyayı ve "Oku" listesini baştan sona oku; "Skill" alanındakileri yükle.
 2. **Adım 0 (koda ya da çizime başlamadan):** ilgili yeri oku. Tarif ile gerçek durum uyuşmuyorsa ya da tarifte olmayan bir karar gerekiyorsa sessizce birini seçme; farkı orkestratöre `SORU:` mesajıyla bildir.
-3. İşi yap. Kullanıcıya soru sorma; sorun olursa orkestratöre `SORU:` mesajı gönder ve cevabı beklerken cevaba bağlı olmayan kısımla devam et. Kayıt belgelerine (durum, karar, ders) dokunma; onları orkestratör yazar.
+3. İşi yap. Kullanıcıya soru sorma; sorun olursa orkestratöre `SORU:` mesajı gönder ve cevabı beklerken cevaba bağlı olmayan kısımla devam et. Kayıt belgelerini (durum, karar, ders) orkestratör yazar; proje yasası bir belgeyi sana yazdırıyorsa o geçerlidir.
 4. Kod işinde: testleri koş, commit'ten önce kendi farkını `code-review` ile incele, kod commit'ini at (commit'e yalnız kendi değiştirdiğin dosyaları adıyla ekle). Tasarım işinde: seçenekli üret, uygulama koduna dokunma.
 5. Bu dosyanın sonuna "## Rapor" başlığıyla raporunu yaz:
    - ilk satır: yüklenen skill'ler;

@@ -13,4 +13,4 @@ Henüz yok: çalıştırma, test, derleme, yayın.
 Henüz tanımlanmadı.
 
 ## Bu projeye özgü onaylar ve izinler
-Varsayılan onay listesi geçerli (uzak depoya gönderme, yayın, uzak veritabanına yazma). Değişiklik buraya ve `.claude/teke/ayar.json` → `onay.desenler` alanına yazılır.
+Varsayılan onay listesi geçerli (uzak depoya gönderme, yayın, uzak veritabanına yazma, canlı ortam ayarı). Değişiklik buraya ve `.claude/teke/ayar.json` → `onay.desenler` alanına yazılır.

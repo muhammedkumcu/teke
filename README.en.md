@@ -12,7 +12,7 @@ It writes down your decisions, the questions waiting on you and the lessons lear
 
 <br>
 
-![Version](https://img.shields.io/badge/version-2.3.0-D97706?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-2.3.1-D97706?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-2563EB?style=for-the-badge)
 
 [Türkçe](README.md) · **English**
@@ -46,7 +46,7 @@ Inside are one rules file, three skills, five helpers and scripts that run in th
 | **Design first, then code** | If something visible on screen is going to change, the design session draws the options first. You choose, and the code is written after that. |
 | **Model and thinking level to fit the task** | For every task the orchestrator chooses how much thinking the session will work with and which model is used for scanning and for review, and tells you. You can change it. |
 | **Lasting memory and lessons** | Your decisions, where you are, and the lessons learned from mistakes are written to documents in your project. Where you are and the lessons are read again at the start of every session, the decisions when a task that rests on them starts. Correcting the orchestrator once is enough: it writes the lesson, and later sessions start out knowing it. |
-| **No deploy behind your back** | Commands that push to the remote or deploy run only in the orchestrator, with your approval; in the code and design sessions they are stopped. Which commands are asked about is written in the settings and can be changed per project. |
+| **No deploy behind your back** | Commands that push to the remote, deploy, or change a live setting do not run without your approval. Approval is taken in the orchestrator; in the code and design sessions these commands are stopped. Which commands are asked about, and in which session, is written in the settings and can be changed per project. |
 | **It adapts to you** | Saying "from now on, do it this way" is enough; the orchestrator writes it into the project's rules. Over time the setup takes the shape of the way you work, and grows with it. |
 
 How each of these works is below, in [How do the features work?](#how-do-the-features-work)
@@ -149,6 +149,7 @@ It is used in a project that is just starting and in one that has been running f
 | **You are just starting** | It creates the record documents. You go straight to work. |
 | **You have code but no written setup** | It creates the record documents. In the first task the orchestrator reads the code and writes the project's description and commands itself. |
 | **You have your own rules and documents** | Your documents are not moved and their names do not change. Your rules come before Teke's. If the two conflict, the orchestrator shows you and you decide. |
+| **A running project with open sessions** | Before installing, the orchestrator asks how you work today: which session deploys, who writes the records. Your open sessions are not closed; each one's role is recorded and they carry on from where they were. |
 | **Teke is already installed** | You say "Update Teke". Your settings and documents are kept. |
 | **The repository belongs to someone else** | You say so when installing. Teke's files do not go into the repository; they stay only on your computer. Your record documents then live in a `.teke/` folder. |
 
@@ -255,12 +256,12 @@ Most of the above are rules the orchestrator follows. The following are done by 
 
 | When? | What does the script do? |
 |:--|:--|
-| **When a session opens, and after a compact or a clear** | Loads where you are and the lessons. |
+| **When a session opens, and after a compact or a clear** | Loads where you are and the lessons. If work was done after the status document was last updated, says the document may be stale. |
 | **On every message and while a long task runs** | Measures fullness and gives notice when a threshold is crossed. Reminds the orchestrator of the lesson scan every 25 messages. |
 | **When you type "continue"** | Puts the list of what is waiting on you in front of the orchestrator. |
 | **When a task is sent to another session** | Checks that your words were not changed; rejects the message once if it cannot find a quote. |
 | **When a helper is called** | Stops a helper opened with no model written, or with a model you have forbidden. |
-| **When a command that needs approval is run** | Stops the command in the code and design sessions; in the orchestrator, asks you. |
+| **When a command that needs approval is run** | Stops the command in the code and design sessions; in the orchestrator, asks you. If the code session deploys in your project, a setting turns this around: you are asked in the code session. |
 
 If one of the scripts fails, your work does not stop. You can switch off a script you do not want in the settings.
 
@@ -283,7 +284,7 @@ The settings are in `.claude/teke/ayar.json` (*ayar* means "setting"). To change
 | `ders.hatirlatMesaj` | How many messages pass between lesson-scan reminders | 25 |
 | `baglam.bildirYuzde`, `baglam.compactYuzde` | The notice and compact thresholds, in percent | 50, 65 |
 | `baglam.pencere` | Your model's context window (measured at install) | 1,000,000 |
-| `onay.desenler` | The commands you are asked about every time | pushing to the remote, deploying, writing to a remote database |
+| `onay.desenler` | The commands you are asked about every time. Each can also say which session asks (`kimde`) | pushing to the remote, deploying, writing to a remote database, changing live settings; all in the orchestrator |
 | `belge.yollar` | The mapping, if your documents have different names | empty |
 | `commit.ortakYazarYasak` | Do not add a co-author line to commit messages | off |
 | `kapaliKancalar` | The file names of the scripts you want switched off | empty |
@@ -315,7 +316,7 @@ You can change the language of an installed project later; telling the orchestra
 |:--|:--|
 | `SETUP.md`, `KURULUM.md` | The instructions the installing session follows (English, Turkish) |
 | `kit/kancalar/` | The scripts that run on their own, as hooks (shared by both languages) |
-| `kit/araclar/` | The tools: installer, health check, maintenance, lesson scan, silence watch, tests (shared by both languages) |
+| `kit/araclar/` | The tools: installer, health check, maintenance, lesson scan, silence watch, role tool, tests (shared by both languages) |
 | `kit/ayarlar/` | The starting settings |
 | `kit/dil/en/` | The English texts: the rules file, three skills, five helpers, document templates, and the translation of the scripts' messages (`dil.json`) |
 | `kit/dil/tr/` | The same in Turkish |

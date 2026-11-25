@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.3.1 — installing into a running project
+Closes the gaps that showed up when installing into long-running projects with open sessions.
+- **Roles are recorded, not guessed.** When the first message of a session opened before the kit was installed cannot be seen, the role is no longer guessed and stored: the session is told its role is not recorded and which command records it. The new tool `rol.js` lists the sessions and sets a role. A session whose first message came from another session counts as the code session; a message whose first line is `ROLE:` corrects a wrongly inferred role. Neither a report arriving from another session nor `HANDOFF:` and `ROLE:` lines inside a message the user types to the orchestrator can change the orchestrator's role.
+- **Approval list.** The deploy patterns catch a deploy from a subfolder (`pnpm -C … deploy`), with `pages`, and with `npx wrangler@…`; a dry run (`--dry-run`) is not asked about. New default item: changing live settings (`wrangler secret put`, rollback). On update, patterns that are still the kit's old defaults are renewed; patterns the user wrote are kept.
+- **Who runs it.** Any pattern can carry `"kimde": "code"`: the approval card opens in that session and the command is refused in the other. For projects where the code session deploys.
+- **False refusals.** `git push` or a deploy word inside a commit message body (heredoc, here-string) is not treated as a command; a body given to any other command is checked as before. A command passed in quotes to `eval` or `Invoke-Expression` is checked too. The co-author check refuses only a real `Co-Authored-By: Name <address>` line.
+- **The health check** reports `package.json` scripts that run a deploy command inside them but are not caught by the approval list; the installer shows this in its output.
+- **Stale status document.** The opening summary says how many days have passed and how many commits were made since the status document was last updated.
+- **Lessons load section by section.** In a long, sectioned lessons file the last lessons of every section are taken; before, only the start and the end of the file were loaded.
+- **The quote check** reads the session transcript from the end and stops once the quotes are found; it works on transcripts of hundreds of MB. If time runs out it no longer skips silently; it says so.
+- The role line sent to the code and design sessions is softer: the orchestrator writes the record documents, and if the project's law file has that session write one, that applies.
+- Because the rules file also enters the context of helpers, a line addressed to helpers was added at its top.
+- Section 5 of `SETUP.md` was rewritten: what to do before and right after the installer in a running project.
+
 ## 2.3.0 — first public release
 - The setup: one orchestrator, one persistent code session, one persistent design session. The orchestrator does not produce; tasks go to the same sessions by message.
 - An install that asks no questions; the same command installs and updates. The installer checks its own work.

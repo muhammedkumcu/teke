@@ -726,6 +726,176 @@ const devirK = path.join(P, "docs", "devir");
   esit("J10 Türkçe kurulumda İngilizce işaretler de tanınıyor", JSON.parse(oku(path.join(P, ".claude", "teke", "durum", "c4.json"))).rol === "tasarim" && betik(P, "istem.js", { session_id: "j-tr", transcript_path: kayit(P, "j-tr", []), prompt: "HANDOFF: docs/devir/x.md\nROLE: design" }).ek.includes("tasarım oturumu"));
 }
 
+// ================= K) 2.3.1: SÜREN PROJEYE KURULUM (rol, onay listesi, bayat belge, büyük kayıt) =================
+{
+  const Q = klasor();
+  kur(Q);
+  const durum = (oturum) => { try { return JSON.parse(oku(path.join(Q, ".claude", "teke", "durum", oturum + ".json"))); } catch { return {}; } };
+  const istem = (oturum, k, prompt) => betik(Q, "istem.js", { session_id: oturum, transcript_path: k, prompt });
+  const komut = (oturum, k, c) => betik(Q, "komut-kapisi.js", { tool_name: "Bash", tool_input: { command: c }, transcript_path: k, session_id: oturum });
+  const ozet = JSON.stringify({ type: "user", isCompactSummary: true, message: { role: "user", content: "This session is being continued from a previous conversation.\nDEVİR: docs/devir/eski.md\nROL: kod" } });
+  const baskaOturum = (metin) => JSON.stringify({ type: "user", isMeta: true, message: { role: "user", content: `Another Claude session sent a message:\n<cross-session-message from="local_abc" from-name="Orkestratör">\n${metin}\n</cross-session-message>` } });
+
+  // K1: kit kurulmadan önce açılmış, compact edilmiş oturum (kayıt özetle başlar): rol varsayılır, kaydedilmez, bir kez sorulur
+  let k = kayit(Q, "k-eski", [ozet, baskaOturum("RAPOR: lobi bitti"), asi(100000)]);
+  let b = istem("ke1", k, "selam");
+  esit("K1 ilk mesajı görülemeyen oturumda rol kaydedilmiyor, oturuma kendi rolünü yazması söyleniyor", !durum("ke1").rol && /rol\.js ke1 orkestrator/.test(b.ek), b.ek + JSON.stringify(durum("ke1")));
+  esit("K1 aynı uyarı ikinci mesajda yinelenmiyor", !/rol\.js/.test(istem("ke1", k, "peki").ek));
+  b = istem("ke1", k, 'Another Claude session sent a message:\n<cross-session-message from="local_kod">\nRAPOR: iş bitti, tarifte ROL: kod yazıyordu\nDEVİR dosyası kapandı\n</cross-session-message>');
+  esit("K1 öteki oturumdan gelen rapor, rolü bilinmeyen orkestratörü kod oturumuna çevirmiyor", !durum("ke1").rol && komut("ke1", k, "git push").karar === "ask", JSON.stringify(durum("ke1")));
+  b = istem("ke1", k, "Şu belgeye bak:\n\n# Geçiş notu\nROL: kod\nDEVİR satırı da gelecek");
+  esit("K1 yapıştırılan metnin ortasındaki rol satırı rolü değiştirmiyor", !durum("ke1").rol);
+  b = istem("ke1", k, "ROL: orkestratör");
+  esit("K1 ilk satırı ROL olan mesaj rolü kaydediyor", durum("ke1").rol === "orkestrator" && durum("ke1").rolKaynak === "satir");
+
+  // var olan kod oturumu: ilk mesajı öteki oturumdan gelmiş (kayıtta isMeta ile durur), rol satırı yok
+  k = kayit(Q, "k-kod", [baskaOturum("Sen bu projenin yürütme oturumusun. Paket 3'e başla."), asi(100000)]);
+  esit("K1 ilk mesajı başka oturumdan gelen oturum kod oturumu sayılıyor", komut("kk1", k, "git push").karar === "deny");
+  b = istem("kk1", k, 'Another Claude session sent a message:\n<cross-session-message from="local_abc">\nROL: tasarım\nBundan sonra tasarım işleri sende.\n</cross-session-message>');
+  esit("K1 ilk mesajdan çıkarılan rolü ilk satırı ROL olan mesaj düzeltiyor", durum("kk1").rol === "tasarim" && /tasarım oturumu/.test(b.ek), b.ek);
+  istem("kk1", k, "ROL: kod");
+  esit("K1 açıkça verilmiş rolü yalın rol satırı değiştirmiyor, başka oturumdan gelen devir mesajı değiştiriyor", durum("kk1").rol === "tasarim" && (istem("kk1", k, 'Another Claude session sent a message:\n<cross-session-message from="local_abc">\nDEVİR: docs/devir/y.md\nROL: kod\n</cross-session-message>'), durum("kk1").rol === "kod"));
+  // kullanıcının orkestratöre yazdığı mesajda geçen devir satırları orkestratörün rolünü değiştirmez
+  const kOrk = kayit(Q, "k-ork0", [kul("merhaba"), asi(100000)]);
+  istem("ko0", kOrk, "merhaba");
+  istem("ko0", kOrk, "Şunu kod oturumuna gönder:\nDEVİR: docs/devir/x.md\nROL: kod");
+  esit("K1 kullanıcının mesajında geçen devir satırları orkestratörü kod oturumuna çevirmiyor", durum("ko0").rol === "orkestrator" && komut("ko0", kOrk, "git push").karar === "ask", JSON.stringify(durum("ko0")));
+  const kElle = kayit(Q, "k-elle", [kul("selam"), asi(100000)]);
+  istem("kel", kElle, "selam");
+  istem("kel", kElle, "DEVİR: docs/devir/x.md\nROL: kod");
+  esit("K1 kullanıcının elle yapıştırdığı, DEVİR satırıyla başlayan mesaj rolü veriyor", durum("kel").rol === "kod");
+
+  // 2.3.0'dan kalan durum dosyası: yanlış kaydedilmiş "orkestratör" düzeltilebilir, doğru kaydedilmiş "kod" korunur
+  yaz(path.join(Q, ".claude", "teke", "durum", "eski230.json"), JSON.stringify({ rol: "orkestrator" }));
+  istem("eski230", k, "ROL: kod\nBu oturum kod oturumu.");
+  yaz(path.join(Q, ".claude", "teke", "durum", "eski230b.json"), JSON.stringify({ rol: "kod" }));
+  istem("eski230b", k, "ROL: orkestratör");
+  esit("K1 eski sürümün yanlış kaydettiği orkestratör rolü düzeliyor, doğru kaydedilmiş rol korunuyor", durum("eski230").rol === "kod" && durum("eski230b").rol === "kod");
+
+  // açılış: rolü bilinmeyen oturuma başka rolün compact notu yüklenmez; rol yazılınca yüklenir
+  yaz(path.join(Q, "docs", "devir", "KORU-orkestrator.md"), "ORKESTRATÖR NOTU: karar bekleniyor.\n");
+  yaz(path.join(Q, "docs", "devir", "KORU-kod.md"), "KOD NOTU: paket 3 yarıda.\n");
+  k = kayit(Q, "k-eski2", [ozet, asi(100000)]);
+  b = betik(Q, "oturum-baslangici.js", { source: "resume", session_id: "ke2", transcript_path: k });
+  esit("K2 rolü bilinmeyen oturumda açılış: rol komutu veriliyor, hiçbir compact notu yüklenmiyor, ikisi de sayılıyor", /rol\.js ke2 orkestrator/.test(b.ek) && !/karar bekleniyor|paket 3 yarıda/.test(b.ek) && /KORU-orkestrator\.md, docs\/devir\/KORU-kod\.md/.test(b.ek) && !durum("ke2").rol, b.ek);
+  let r = arac(Q, "rol.js");
+  esit("K2 rol aracı oturumları listeliyor", r.status === 0 && /ke2/.test(r.stdout) && /VARSAYIM/.test(r.stdout) && /kk1/.test(r.stdout), r.stdout + r.stderr);
+  r = arac(Q, "rol.js", "ke2", "kod");
+  b = betik(Q, "oturum-baslangici.js", { source: "compact", session_id: "ke2", transcript_path: k });
+  esit("K2 rol aracı rolü yazıyor, sonraki açılışta o rolün notu yükleniyor", r.status === 0 && durum("ke2").rol === "kod" && durum("ke2").rolKaynak === "elle" && /paket 3 yarıda/.test(b.ek) && !/karar bekleniyor/.test(b.ek), r.stdout + b.ek);
+  esit("K2 rol aracı İngilizce rol adını alıyor, geçersiz rolü ve bulunamayan oturumu reddediyor", arac(Q, "rol.js", "ke2", "design").status === 0 && durum("ke2").rol === "tasarim" && arac(Q, "rol.js", "ke2", "yazar").status === 2 && arac(Q, "rol.js", "yokboyle", "kod").status === 2);
+  esit("K2 rol aracıyla yazılan rolü yalın rol satırı değiştirmiyor", (istem("ke2", k, "ROL: kod"), durum("ke2").rol === "tasarim"));
+
+  // K3: onay listesi
+  const ork = kayit(Q, "k-ork", [kul("merhaba"), asi(100000)]);
+  const kod = kayit(Q, "k-kod2", [kul("DEVİR: docs/devir/x.md\nROL: kod")]);
+  const sorulan = ["pnpm -C apps/worker deploy", "npx wrangler@latest pages deploy dist", "pnpm --filter web run deploy:web", "wrangler secret put KAPALI_MOD", "vercel --prod", "pnpm exec wrangler d1 migrations apply ana --remote"].filter((c) => komut("ko1", ork, c).karar !== "ask");
+  const sorulmayan = ["wrangler deploy --dry-run --outdir dist", "pnpm -C apps/worker deploy --dry-run", "pnpm install", "wrangler d1 execute ana --local --command \"select 1\"", "echo deployment bitti"].filter((c) => komut("ko1", ork, c).karar !== null);
+  esit("K3 yayın desenleri: alt klasörden, pages ile, secret ile yapılan yakalanıyor; deneme yayını sorulmuyor", sorulan.length === 0 && sorulmayan.length === 0, JSON.stringify([sorulan, sorulmayan]));
+  esit("K3 commit mesajının gövdesinde geçen komut adı komut sayılmıyor (heredoc ve here-string)",
+    komut("ko1", ork, "git commit -q -F - <<'EOF'\nKural: git push yalnız orkestratörde, wrangler deploy onayla\nEOF").karar === null &&
+    komut("ko1", ork, "git commit -m \"$(cat <<'EOF'\nYayın notu: \"pnpm yayinla\" artık sorulur\nEOF\n)\"").karar === null &&
+    komut("ko1", ork, "git commit -m @'\nDEVAM'ı güncelle: git push kuralı\n'@").karar === null);
+  esit("K3 gövdesi kabuğa verilen heredoc komut sayılıyor", komut("ko1", ork, "bash <<EOF\ngit push\nEOF").karar === "ask" && komut("ko1", ork, "cat <<EOF | bash\nwrangler deploy\nEOF").karar === "ask");
+  // gövde ayıklama yalnız commit mesajında yapılır: başka her gövde denetlenir
+  const kacan = [
+    'echo "<<EOF"\ngit push origin main\nEOF',
+    "# <<EOF\ngit push origin main\nEOF",
+    "cat <<<EOF\ngit push origin main\nEOF",
+    "/bin/bash <<EOF\ngit push origin main\nEOF",
+    "source /dev/stdin <<EOF\ngit push origin main\nEOF",
+    "eval \"$(cat <<'EOF'\ngit push origin main\nEOF\n)\"",
+    "Invoke-Expression @'\ngit push origin main\n'@",
+    "@'\ngit push origin main\n'@ | iex",
+    "cat <<EOF\n$(git push origin main)\nEOF",
+    "cat > d.sh <<EOF\nwrangler deploy\nEOF\nsh d.sh",
+    'git commit -m "<<EOF"\ngit push origin main\nEOF',
+    "git commit -F - <<EOF\n$(git push origin main)\nEOF",
+    "git commit -F - <<'EOF'\nmesaj\nEOF\ngit push origin main",
+    "/bin/bash -c \"git push origin main\"",
+    "yarn workspace web deploy",
+    "wrangler deploy --var X:--dry-run",
+  ].filter((c) => komut("ko1", ork, c).karar !== "ask");
+  esit("K3 gövde ayıklama gerçek komutu kaçırmıyor (dize içindeki <<, here-string, kabuğa giden gövde, açılım, gövdeden sonraki komut)", kacan.length === 0, JSON.stringify(kacan));
+  const t0 = Date.now();
+  const uzun = komut("ko1", ork, "pnpm " + "--filter=@app/x ".repeat(60) + "build");
+  esit("K3 çok seçenekli komutta yayın deseni takılmıyor", uzun.karar === null && Date.now() - t0 < 3000, String(Date.now() - t0) + " ms");
+  const ayarYol = path.join(Q, ".claude", "teke", "ayar.json");
+  let ay = JSON.parse(oku(ayarYol));
+  ay.commit.ortakYazarYasak = true;
+  ay.onay.desenler[1].kimde = "kod";
+  yaz(ayarYol, JSON.stringify(ay));
+  esit("K3 ortak yazar denetimi: kuralı anlatan mesaj geçiyor, gerçek satır reddediliyor",
+    komut("ko1", ork, "git commit -m \"Co-Authored-By satırı artık eklenmiyor\"").karar === null &&
+    komut("ko1", ork, "git commit -m \"düzeltme\n\nCo-Authored-By: Claude <noreply@anthropic.com>\"").karar === "deny" &&
+    komut("ko1", ork, "git commit -m x --trailer=Co-authored-by=Claude").karar === "deny");
+  b = komut("ko1", ork, "pnpm yayinla");
+  esit("K3 'kimde: kod' yazılan iş kod oturumunda onay kartı açıyor, orkestratörde reddediliyor", komut("ko2", kod, "pnpm yayinla").karar === "ask" && b.karar === "deny" && /kod oturumu/.test(b.neden) && komut("ko2", kod, "git push").karar === "deny", b.neden);
+
+  // güncelleme: kitin eski varsayılan desenleri yenilenir, kullanıcının kendi deseni kalır
+  ay = JSON.parse(oku(ayarYol));
+  ay.kitSurumu = "2.3.0";
+  ay.onay.desenler = [
+    { ad: "yayın", desen: "\\b(wrangler|vercel|netlify|firebase|flyctl|fly)\\s+(deploy|publish)\\b|\\b(npm|pnpm|yarn|bun)\\s+(run\\s+)?(deploy|yayinla|publish)\\b", kimde: "kod" },
+    { ad: "uzak veritabanı", desen: "\\bwrangler\\s+d1\\s+(execute|migrations\\s+apply)\\b.*--remote\\b" },
+    { ad: "benim desenim", desen: "\\bterraform\\s+apply\\b" },
+  ];
+  yaz(ayarYol, JSON.stringify(ay));
+  r = kur(Q);
+  ay = JSON.parse(oku(ayarYol));
+  const vars = JSON.parse(oku(path.join(KIT, "ayarlar", "ayar.varsayilan.json"))).onay.desenler;
+  esit("K3 güncellemede eski varsayılan desenler yenileniyor, kullanıcının deseni ve 'kimde' ayarı kalıyor, yeni madde ekleniyor",
+    r.status === 0 && ay.onay.desenler[0].desen === vars[1].desen && ay.onay.desenler[0].kimde === "kod" && ay.onay.desenler[0].ad === "yayın" && ay.onay.desenler[1].desen === vars[2].desen && ay.onay.desenler[2].desen === "\\bterraform\\s+apply\\b" && ay.onay.desenler.length === 4 && ay.onay.desenler[3].desen === vars[3].desen && /yenilendi/.test(r.stdout), r.stdout + JSON.stringify(ay.onay));
+  esit("K3 ikinci güncelleme onay listesini değiştirmiyor", (kur(Q), JSON.stringify(JSON.parse(oku(ayarYol)).onay) === JSON.stringify(ay.onay)));
+  yaz(path.join(Q, "package.json"), JSON.stringify({ scripts: { uretim: "wrangler deploy", "web:deploy": "node yayin.mjs", deploy: "wrangler deploy", test: "vitest" } }));
+  r = arac(Q, "saglik.js");
+  esit("K3 sağlık kontrolü, içinde yayın çalıştıran ama listenin yakalamadığı betiği bildiriyor", r.status === 0 && /uretim, web:deploy\./.test(r.stdout) && /onay\.desenler/.test(r.stdout), r.stdout);
+  esit("K3 kurucu bu uyarıyı kurulum çıktısında gösteriyor", /uretim, web:deploy/.test(kur(Q).stdout));
+}
+{
+  // K4: açılış özeti bayat durum belgesini söyler; uzun ve bölümlü ders dosyasından her bölüm yüklenir
+  const Q = klasor();
+  kur(Q);
+  const git = (a, env) => spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...a], { cwd: Q, encoding: "utf8", env: { ...process.env, ...(env || {}) } });
+  yaz(path.join(Q, "DEVAM.md"), "# DEVAM\n\n## ŞU AN / SIRADAKİ\n1. Ara durak sunuldu, cevap bekleniyor.\n");
+  git(["add", "-A"]);
+  const besGunOnce = new Date(Date.now() - 5 * 86400000).toISOString();
+  git(["commit", "-qm", "durum"], { GIT_AUTHOR_DATE: besGunOnce, GIT_COMMITTER_DATE: besGunOnce });
+  let b = betik(Q, "oturum-baslangici.js", { source: "startup", session_id: "kb1" });
+  esit("K4 güncel durum belgesinde bayat uyarısı yok", !/DİKKAT/.test(b.ek), b.ek);
+  for (const n of [1, 2, 3]) { yaz(path.join(Q, "src.js"), String(n)); git(["add", "src.js"]); git(["commit", "-qm", "kod " + n]); }
+  b = betik(Q, "oturum-baslangici.js", { source: "startup", session_id: "kb1" });
+  esit("K4 belgeden sonra iş yapıldıysa açılış bunu söylüyor (kaç gün, kaç commit)", /DİKKAT: DEVAM\.md en son 5 gün önce güncellendi; sonrasında 3 commit var/.test(b.ek), b.ek);
+  yaz(path.join(Q, "DEVAM.md"), "# DEVAM\n\n## ŞU AN / SIRADAKİ\n1. Cevaplar işleniyor.\n");
+  esit("K4 belge güncellenince uyarı kalkıyor (kaydedilmemiş değişiklik de sayılır)", !/DİKKAT/.test(betik(Q, "oturum-baslangici.js", { source: "startup", session_id: "kb1" }).ek));
+
+  const bolumAdlari = ["1) Ortam", "2) Arayüz", "3) Test", "4) Veri", "5) Yardımcılar", "6) Süreç"];
+  yaz(path.join(Q, "docs", "DERSLER.md"), "# DERSLER\n\n" + bolumAdlari.map((ad, i) => `## ${ad}\n` + Array.from({ length: 12 }, (_, n) => `- **${ad[0]}${n + 1}** ${ad} dersi ${n + 1}: ` + "ayrıntı ".repeat(25)).join("\n")).join("\n\n") + "\n");
+  b = betik(Q, "oturum-baslangici.js", { source: "startup", session_id: "kb2" });
+  esit("K4 bölümlü ders dosyasında her bölümün son dersleri yükleniyor, bölüm adı ve ders sayısı yazıyor", bolumAdlari.every((ad) => b.ek.includes(`[${ad} · 12]`)) && /\*\*312\*\* 3\) Test dersi 12/.test(b.ek) && /\*\*412\*\*/.test(b.ek) && !/\*\*31\*\* /.test(b.ek) && /72;/.test(b.ek), b.ek.slice(b.ek.indexOf("DERSLER")));
+  // çok bölümlü ders dosyası açılış özetini taşırmaz: compact notu yine yüklenir
+  yaz(path.join(Q, "docs", "DERSLER.md"), "# DERSLER\n\n" + Array.from({ length: 70 }, (_, i) => `## Bölüm ${i + 1}\n- ders ${i + 1}: ` + "uzun ayrıntı ".repeat(22)).join("\n\n") + "\n");
+  yaz(path.join(Q, "docs", "devir", "KORU-orkestrator.md"), "KORU NOTU: kaldığımız adım burada.\n");
+  b = betik(Q, "oturum-baslangici.js", { source: "compact", session_id: "kb3" });
+  esit("K4 yetmiş bölümlü ders dosyasında özet sınırda kalıyor, compact notu yükleniyor", /kaldığımız adım burada/.test(b.ek) && /bölüm daha dosyada/.test(b.ek) && b.ek.length < 14000, String(b.ek.length));
+}
+{
+  // K5: söz denetimi büyük kayıtta sondan okur; alıntı baştaki mesajda da olsa bulunur, yoksa geri çevrilir
+  const Q = klasor();
+  kur(Q);
+  const { kayittaAra } = require(path.join(KIT, "kancalar", "devir-kapisi.js"));
+  const dolgu = JSON.stringify({ type: "assistant", message: { role: "assistant", content: [{ type: "text", text: "şğüöçıİ ".repeat(4000) }] } });
+  const satirlar = [kul("Lobi ekranında oyuncu adları büyük harfle yazılsın istiyorum")];
+  for (let i = 0; i < 260; i++) satirlar.push(dolgu);
+  satirlar.push(kul("Bir de çıkış düğmesi sağ üstte dursun lütfen"));
+  const k = kayit(Q, "k-buyuk", satirlar);
+  const boyutMB = Math.round(fs.statSync(k).size / 1048576);
+  const ara = (soz) => kayittaAra(k, [[soz]], 20000);
+  esit(`K5 alıntı ${boyutMB} MB'lik kaydın sonundaki ve başındaki mesajda bulunuyor, olmayan alıntı bulunmuyor`, boyutMB >= 9 && ara("Bir de çıkış düğmesi sağ üstte dursun lütfen").yok.length === 0 && ara("Lobi ekranında oyuncu adları büyük harfle yazılsın istiyorum").yok.length === 0 && ara("Oyuncu adları küçük harfle yazılsın istiyorum").yok.length === 1 && ara("Oyuncu adları küçük harfle yazılsın istiyorum").tam === true);
+  const yarim = kayittaAra(k, [["Lobi ekranında oyuncu adları büyük harfle yazılsın istiyorum"]], -1);
+  esit("K5 süre yetmezse denetim 'tamamlanmadı' der, alıntıyı yok saymaz", yarim.tam === false && yarim.yok.length === 1);
+}
+
 for (const d of gecici) { try { fs.rmSync(d, { recursive: true, force: true }); } catch {} }
 console.log(`\n${gecti}/${gecti + kalanlar.length} test geçti` + (kalanlar.length ? `; KALAN: ${kalanlar.join(" · ")}` : ""));
 process.exit(kalanlar.length ? 1 : 0);

@@ -44,7 +44,7 @@
 ## For the session doing the work (the same in every brief)
 1. Read this file and the "Read" list from start to finish; load what is in the "Skills" field.
 2. **Step 0 (before starting on code or drawing):** read the relevant place. If the brief and the real state disagree, or a decision not in the brief is needed, do not silently pick one; report the difference to the orchestrator in a `QUESTION:` message.
-3. Do the work. Do not ask the user questions; if there is a problem, send the orchestrator a `QUESTION:` message and carry on with the part that does not depend on the answer while you wait. Do not touch the record documents (status, decisions, lessons); the orchestrator writes those.
+3. Do the work. Do not ask the user questions; if there is a problem, send the orchestrator a `QUESTION:` message and carry on with the part that does not depend on the answer while you wait. The record documents (status, decisions, lessons) are written by the orchestrator; if the project's law file has you write one of them, that applies.
 4. In code work: run the tests, review your own diff with `code-review` before committing, make the code commit (add only the files you changed yourself, by name). In design work: produce options, do not touch application code.
 5. Write your report at the end of this file under the heading "## Report":
    - first line: the skills loaded;

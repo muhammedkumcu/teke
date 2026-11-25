@@ -3,7 +3,28 @@
 // Kullanıcının compact sonrası metin yapıştırmasına gerek kalmaz. Çıktı olgu olarak yazılır ve 16.000 karakteri geçmez.
 const fs = require("fs");
 const path = require("path");
-const { girdiOku, projeKoku, ayarOku, baglamEkle, guvenli, oku, belgeYolu, belgeAdi, devirKlasoru, rolBul, durumOku, durumYaz, jsonDene, durumBolumu, koruDosyasi, paket, paketAdi, m, TARIF_DEGIL, KAPANDI_SATIRI } = require("./ortak");
+const { girdiOku, projeKoku, ayarOku, baglamEkle, guvenli, oku, belgeYolu, belgeAdi, devirKlasoru, rolAyrinti, durumOku, durumYaz, jsonDene, durumBolumu, koruDosyasi, paket, paketAdi, m, TARIF_DEGIL, KAPANDI_SATIRI } = require("./ortak");
+
+// Belgenin yaşı: son güncellendiği zamandan bugüne gün sayısı ve o zamandan sonra atılan commit sayısı.
+// Belge git'te ve değişmemişse son commit'i, değilse (kaydedilmemiş ya da git dışı) dosya zamanı esas alınır.
+function belgeYasi(kok, goreliYol) {
+  try {
+    const { execFileSync } = require("child_process");
+    const git = (a) => execFileSync("git", a, { cwd: kok, stdio: ["ignore", "pipe", "ignore"], timeout: 5000 }).toString().trim();
+    const kirli = git(["status", "--porcelain", "--", goreliYol]);
+    const son = kirli ? "" : git(["log", "-1", "--format=%H %ct", "--", goreliYol]);
+    let zaman, commit;
+    if (son) {
+      const [kimlik, t] = son.split(" ");
+      zaman = Number(t) * 1000;
+      commit = Number(git(["rev-list", "--count", `${kimlik}..HEAD`]));
+    } else {
+      zaman = fs.statSync(path.join(kok, goreliYol)).mtimeMs;
+      commit = Number(git(["rev-list", "--count", `--since=${Math.floor(zaman / 1000) + 1}`, "HEAD"]));
+    }
+    return { gun: Math.floor((Date.now() - zaman) / 86400000), commit: commit || 0 };
+  } catch { return null; }
+}
 
 guvenli(async () => {
   const g = await girdiOku();
@@ -14,22 +35,31 @@ guvenli(async () => {
   const ROL_ADI = P.rolAdlari;
   const kirpildi = () => m("kirpildi", "\n…(kırpıldı; dosyanın kendisini oku)");
   const kaynak = g.source || "startup";
-  const rol = rolBul(g, kok);
-  // Yeni açılan oturumda henüz mesaj yoktur: rol ilk mesajla belli olur, o yüzden burada kalıcı yazılmaz.
-  // Clear de yeni bir oturum kaydı başlatır: rol yine ilk mesajla belli olur.
-  const belirsiz = (kaynak === "startup" || kaynak === "clear") && rol === "orkestrator" && !durumOku(kok, g.session_id).rol;
+  const ra = rolAyrinti(g, kok);
+  const rol = ra.rol;
+  // Rol varsayımsa kalıcı yazılmaz. İki durumda varsayımdır:
+  //  - yeni açılan ya da clear edilen oturumda henüz mesaj yoktur, rol ilk mesajla belli olur;
+  //  - kit kurulmadan önce açılmış ve compact edilmiş oturumun ilk mesajı görülemez: oturum rolünü kendisi kaydeder.
+  // (Kayıtta hiç mesaj yokken compact ya da resume gelirse oturum, eskisi gibi, kullanıcının konuştuğu oturum sayılır.)
+  const bos = !!(ra.ilk && ra.ilk.yok);
+  if (ra.kaynak === "varsayim" && bos && kaynak !== "startup" && kaynak !== "clear") ra.kaynak = "kayit";
+  const belirsiz = ra.kaynak === "varsayim";
+  const yeni = belirsiz && bos;
   if (g.session_id) {
     const d = durumOku(kok, g.session_id);
-    if (!d.rol && !belirsiz) d.rol = rol;
+    if (!d.rol && !belirsiz) { d.rol = rol; d.rolKaynak = ra.kaynak; }
     if (g.transcript_path) d.kayit = g.transcript_path;
     if (kaynak === "compact" || kaynak === "clear") d.sonBant = 0;
+    if (belirsiz && !yeni) d.rolSoruldu = true; // aşağıda söyleniyor: mesaj betiği yinelemesin
     durumYaz(kok, g.session_id, d);
   }
   const p = [];
   const surum = (oku(path.join(kok, ".claude", "teke", "SURUM")) || "?").trim();
   p.push(m("ac.giris", "[teke] Bu projede Teke kurulu (sürüm {surum}). Bu oturumun rolü: {rol}{belirsiz}. Çalışma düzeni: .claude/rules/teke.md. Oturum kaynağı: {kaynak}.", {
     surum, rol: ROL_ADI[rol], kaynak,
-    belirsiz: belirsiz ? m("ac.belirsiz", " (ilk mesajda `ROL: kod` ya da `ROL: tasarım` satırı gelirse o rol geçerlidir)") : "",
+    belirsiz: !belirsiz ? "" : yeni
+      ? m("ac.belirsiz", " (ilk mesajda `ROL: kod` ya da `ROL: tasarım` satırı gelirse o rol geçerlidir)")
+      : m("ac.belirsiz.eski", " (VARSAYIM: bu oturumun ilk mesajı görülemiyor, rolü kayıtlı değil. Hangi oturum olduğunu biliyorsun; rolünü bir kez kaydet: node .claude/teke/araclar/rol.js {id} orkestrator   — kod oturumuysan sona kod, tasarım oturumuysan tasarim yaz)", { id: g.session_id || "<oturum>" }),
   }));
   if (ayar._bozuk) p.push(m("ac.bozuk", "UYARI: .claude/teke/ayar.json okunamıyor (bozuk JSON); varsayılan değerlerle çalışılıyor. Kullanıcıya söyle ve dosyayı düzelt."));
 
@@ -66,6 +96,13 @@ guvenli(async () => {
     const acik = durumBolumu(devam, "bekleyen", 2400);
     const hedef = durumBolumu(devam, "hedef", 1000);
     const harita = durumBolumu(devam, "harita", 1500);
+    // Belge bayat olabilir: betik içeriğin doğruluğunu bilemez, ama belgeden sonra ne kadar iş yapıldığını sayabilir.
+    const yas = belgeYasi(kok, devamAdi);
+    if (yas && (yas.commit >= 10 || (yas.commit >= 1 && yas.gun >= 2))) {
+      p.push(m("ac.devam.bayat", "DİKKAT: {ad} en son {zaman} güncellendi; sonrasında {n} commit var. Aşağıdaki durum bayat olabilir: olgu sayma, son commit'lerle karşılaştır ve belgeyi güncelle.", {
+        ad: devamAdi, n: yas.commit, zaman: yas.gun < 1 ? m("ac.bugun", "bugün") : m("ac.yas.gun", "{n} gün önce", { n: yas.gun }),
+      }));
+    }
     if (suAn || acik) {
       if (suAn) p.push(m("ac.suan", "{ad} — şu an / sıradaki:", { ad: devamAdi }) + "\n" + suAn);
       if (acik) p.push(m("ac.bekleyen", "{ad} — bekleyenler (kullanıcıdan beklenen her şey; \"devam\" denince, iş kapanışında ve compact sonrasında gösterilir):", { ad: devamAdi }) + "\n" + acik);
@@ -82,18 +119,56 @@ guvenli(async () => {
   // Sıra projeden projeye değiştiği için (en yeni başta ya da sonda) çok uzarsa baştan ve sondan alınır.
   // Ders satırı: madde imiyle ya da kalın başlıkla başlayan satır.
   const dersAdi = belgeAdi(kok, ayar, "docs/DERSLER.md");
-  const dersler = (oku(belgeYolu(kok, ayar, "docs/DERSLER.md")) || "").split(/\r?\n/).map((s) => s.trim()).filter((s) => /^([-*]\s+\S|\*\*\S)/.test(s));
-  if (dersler.length) {
-    const kisa = dersler.map((s) => (s.length > 220 ? s.slice(0, 220) + "…" : s));
+  // Dosya konuya göre bölümlüyse (## başlıklar) kısaltma bölüm bölüm yapılır: baştan ve sondan almak, ortadaki
+  // bölümlerin (arayüz, test, veri…) hiç yüklenmemesi demektir.
+  const dersBolumleri = [];
+  let dersBolumu = { baslik: "", dersler: [] };
+  for (const ham of (oku(belgeYolu(kok, ayar, "docs/DERSLER.md")) || "").split(/\r?\n/)) {
+    const s = ham.trim();
+    const b = s.match(/^#{2,3}\s+(.+)$/);
+    if (b) { if (dersBolumu.dersler.length) dersBolumleri.push(dersBolumu); dersBolumu = { baslik: b[1].trim(), dersler: [] }; continue; }
+    if (/^([-*]\s+\S|\*\*\S)/.test(s)) dersBolumu.dersler.push(s.length > 220 ? s.slice(0, 220) + "…" : s);
+  }
+  if (dersBolumu.dersler.length) dersBolumleri.push(dersBolumu);
+  const kisa = dersBolumleri.flatMap((b) => b.dersler);
+  if (kisa.length) {
     let sec = kisa;
-    if (kisa.join("\n").length > 4000) sec = [...kisa.slice(0, 9), m("ac.ders.fazla", "…({n} ders daha dosyada)", { n: kisa.length - 18 }), ...kisa.slice(-9)];
-    p.push(m("ac.dersler", "{ad} — bu projenin dersleri ({n}; uzun olan kısaltıldı, işini ilgilendirenin tamamını dosyadan oku):", { ad: dersAdi, n: dersler.length }) + "\n" + sec.join("\n"));
+    if (kisa.join("\n").length > 4000) {
+      if (dersBolumleri.length >= 2) {
+        // Her bölümün son dersleri (bölüm içinde yeni ders sona eklenir) ve bölümün toplam ders sayısı.
+        const al = (k) => dersBolumleri.flatMap((b) => [`[${b.baslik || "…"} · ${b.dersler.length}]`, ...b.dersler.slice(-k)]);
+        let k = Math.max(1, Math.floor(18 / dersBolumleri.length));
+        sec = al(k);
+        while (k > 1 && sec.join("\n").length > 5000) sec = al(--k);
+        // Bölüm çok fazlaysa birer ders bile sığmaz: sığan bölümler alınır, kalanı sayıyla söylenir.
+        if (sec.join("\n").length > 5000) {
+          const sigan = [];
+          let uzunluk = 0, alinan = 0;
+          for (const b of dersBolumleri) {
+            const parca = [`[${b.baslik || "…"} · ${b.dersler.length}]`, ...b.dersler.slice(-1)];
+            uzunluk += parca.join("\n").length + 1;
+            if (uzunluk > 5000) break;
+            sigan.push(...parca);
+            alinan++;
+          }
+          sec = [...sigan, m("ac.ders.bolum.fazla", "…({n} bölüm daha dosyada)", { n: dersBolumleri.length - alinan })];
+        }
+        sec.unshift(m("ac.ders.bolumlu", "(dosya uzun: her bölümden son {k} ders alındı; köşeli ayraçta bölümün adı ve toplam ders sayısı yazar)", { k }));
+      } else {
+        sec = [...kisa.slice(0, 9), m("ac.ders.fazla", "…({n} ders daha dosyada)", { n: kisa.length - 18 }), ...kisa.slice(-9)];
+      }
+    }
+    p.push(m("ac.dersler", "{ad} — bu projenin dersleri ({n}; uzun olan kısaltıldı, işini ilgilendirenin tamamını dosyadan oku):", { ad: dersAdi, n: kisa.length }) + "\n" + sec.join("\n"));
   }
 
   // KORU: compact, clear ya da yeniden açılış sonrası içeriği yüklenir
   const klasor = devirKlasoru(kok, ayar);
   const koru = koruDosyasi(kok, ayar, rol); // kurulum dilindeki adla, yoksa öteki dildeki adla
-  if (koru) {
+  if (belirsiz && !yeni && kaynak !== "startup") {
+    // Rolü bilinmeyen oturuma başka rolün notu yüklenmez: var olan notlar sayılır, kendi rolününkini oturum okur.
+    const notlar = ["orkestrator", "kod", "tasarim"].map((r) => koruDosyasi(kok, ayar, r)).filter(Boolean).map((k) => `${dk}/${k.ad}`);
+    if (notlar.length) p.push(m("ac.koru.rolsuz", "Compact notları: {liste}. Rolün kayıtlı olmadığı için hiçbiri yüklenmedi; kendi rolününkini şimdi oku.", { liste: notlar.join(", ") }));
+  } else if (koru) {
     const koruAd = koru.ad, koruYol = koru.yol;
     const dkGecen = Math.round((Date.now() - fs.statSync(koruYol).mtimeMs) / 60000);
     const yas = dkGecen < 120 ? m("ac.yas.dk", "{n} dk önce", { n: dkGecen }) : dkGecen < 2880 ? m("ac.yas.saat", "{n} saat önce", { n: Math.round(dkGecen / 60) }) : m("ac.yas.gun", "{n} gün önce", { n: Math.round(dkGecen / 1440) });

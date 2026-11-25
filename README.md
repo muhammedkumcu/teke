@@ -12,7 +12,7 @@ Kararlarını, cevap bekleyen soruları ve hatalardan çıkan dersleri yazar; hi
 
 <br>
 
-![Sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-2.3.0-D97706?style=for-the-badge)
+![Sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-2.3.1-D97706?style=for-the-badge)
 ![Lisans](https://img.shields.io/badge/lisans-MIT-2563EB?style=for-the-badge)
 
 **Türkçe** · [English](README.en.md)
@@ -44,7 +44,7 @@ Teke modellerin zekâsına karışmaz. Onlara adım adım ne yapacaklarını dik
 | **Önce tasarım, sonra kod** | Ekranda görünen bir şey değişecekse tasarım oturumu önce seçenekleri çizer. Sen seçersin, kod ondan sonra yazılır. |
 | **İşe göre model ve düşünme düzeyi** | Her iş için oturumun ne kadar düşünerek çalışacağını, taramada ve denetimde hangi modelin kullanılacağını orkestratör seçer ve sana söyler. İstersen değiştirirsin. |
 | **Kalıcı hafıza ve dersler** | Kararların, kaldığın yer ve hatalardan çıkan dersler projendeki belgelere yazılır. Kaldığın yer ve dersler her oturum açılışında, kararlar ilgili işe başlarken yeniden okunur. Orkestratörü bir kez düzeltmen yeter: dersi yazar, sonraki oturumlar onu bilerek başlar. |
-| **Senden habersiz yayın yok** | Uzak depoya gönderme ve yayın komutları yalnızca orkestratörde, senin onayınla çalışır; kod ve tasarım oturumlarında durdurulur. Hangi komutların sorulacağı ayarlarda yazar, projene göre değiştirilir. |
+| **Senden habersiz yayın yok** | Uzak depoya gönderen, yayın yapan ya da canlıdaki bir ayarı değiştiren komutlar senin onayın olmadan çalışmaz. Onay orkestratörde alınır; kod ve tasarım oturumlarında bu komutlar durdurulur. Hangi komutların hangi oturumda sorulacağı ayarlarda yazar; projene göre değiştirilir. |
 | **Sana göre şekillenir** | "Bundan sonra şöyle yap" demen yeter; orkestratör bunu projenin kurallarına yazar. Düzen zamanla senin çalışma biçiminle şekillenir ve gelişir. |
 
 Her birinin nasıl işlediği aşağıda, [Özellikler nasıl işler?](#özellikler-nasıl-işler) bölümünde.
@@ -147,6 +147,7 @@ Yeni başlayan projede de, aylardır süren projede de kullanılır. Kurarken ya
 | **Yeni başlıyorsun** | Kayıt belgelerini açar. Doğrudan işe geçersin. |
 | **Kodun var, yazılı bir düzenin yok** | Kayıt belgelerini açar. Orkestratör ilk işte kodu okur, projenin tanımını ve komutlarını kendisi yazar. |
 | **Kendi kuralların ve belgelerin var** | Belgelerin taşınmaz, adları değişmez. Senin kuralların Teke'nin kurallarından önce gelir. İkisi çelişirse orkestratör sana gösterir, kararı sen verirsin. |
+| **Açık oturumları olan, süren bir proje** | Orkestratör kurmadan önce bugünkü düzenini sorar: yayını hangi oturum yapıyor, kayıtları kim yazıyor. Açık oturumların kapanmaz; her birinin rolü kaydedilir ve kaldıkları yerden sürerler. |
 | **Teke zaten kurulu** | "Teke'yi güncelle" dersin. Ayarların ve belgelerin korunur. |
 | **Depo başkasına ait** | Kurarken söylersin. Teke'nin dosyaları depoya girmez, yalnızca senin bilgisayarında kalır. Kayıt belgelerin `.teke/` klasöründe durur. |
 
@@ -253,12 +254,12 @@ Yukarıdakilerin çoğu orkestratörün uyduğu kurallardır. Aşağıdakiler is
 
 | Ne zaman? | Betik ne yapar? |
 |:--|:--|
-| **Oturum açılınca, compact ve clear'dan sonra** | Kaldığın yeri ve dersleri yükler. |
+| **Oturum açılınca, compact ve clear'dan sonra** | Kaldığın yeri ve dersleri yükler. Durum belgesinden sonra iş yapılmışsa belgenin eskimiş olabileceğini söyler. |
 | **Her mesajda ve uzun iş sürerken** | Doluluğu ölçer, eşik aşılınca haber verir. Her 25 mesajda bir ders taramasını hatırlatır. |
 | **Sen "devam" yazınca** | Senden beklenenlerin listesini orkestratörün önüne koyar. |
 | **İş başka oturuma gönderilirken** | Senin sözünün değiştirilmediğine bakar; bulamadığı alıntı varsa gönderimi bir kez durdurur. |
 | **Bir yardımcı çağrılırken** | Modeli yazılmamış ya da yasakladığın modelle açılan yardımcıyı durdurur. |
-| **Onay isteyen bir komut çalıştırılırken** | Kod ve tasarım oturumunda komutu durdurur; orkestratörde sana sorar. |
+| **Onay isteyen bir komut çalıştırılırken** | Kod ve tasarım oturumunda komutu durdurur; orkestratörde sana sorar. Projende yayını kod oturumu yapıyorsa ayarla tersi kurulur: soru kod oturumunda sorulur. |
 
 Betiklerden biri hata verirse işin durmaz. İstemediğin betiği ayarlardan kapatabilirsin.
 
@@ -281,7 +282,7 @@ Ayarlar `.claude/teke/ayar.json` dosyasındadır. Değiştirmek için orkestrat�
 | `ders.hatirlatMesaj` | Kaç mesajda bir ders taraması hatırlatılsın | 25 |
 | `baglam.bildirYuzde`, `baglam.compactYuzde` | Haber ve compact eşikleri | 50, 65 |
 | `baglam.pencere` | Modelinin bağlam penceresi (kurulumda ölçülür) | 1.000.000 |
-| `onay.desenler` | Her seferinde sana sorulacak komutlar | uzak depoya gönderme, yayın, uzak veritabanına yazma |
+| `onay.desenler` | Her seferinde sana sorulacak komutlar; her biri için hangi oturumda sorulacağı da yazılabilir (`kimde`) | uzak depoya gönderme, yayın, uzak veritabanına yazma, canlı ortam ayarı; hepsi orkestratörde sorulur |
 | `belge.yollar` | Belgelerinin adı farklıysa eşleme | boş |
 | `commit.ortakYazarYasak` | Commit mesajına ortak yazar satırı eklenmesin | kapalı |
 | `kapaliKancalar` | Kapatmak istediğin betiklerin dosya adları | boş |
@@ -313,7 +314,7 @@ Kurulu bir projenin dilini sonradan değiştirebilirsin; orkestratöre söylemen
 |:--|:--|
 | `KURULUM.md`, `SETUP.md` | Kuran oturumun izlediği talimat (Türkçe, İngilizce) |
 | `kit/kancalar/` | Kendiliğinden çalışan betikler (iki dilde ortak) |
-| `kit/araclar/` | Kurucu, sağlık kontrolü, bakım, ders taraması, sessizlik nöbeti, testler (iki dilde ortak) |
+| `kit/araclar/` | Kurucu, sağlık kontrolü, bakım, ders taraması, sessizlik nöbeti, rol aracı, testler (iki dilde ortak) |
 | `kit/ayarlar/` | Başlangıç ayarları |
 | `kit/dil/tr/` | Türkçe metinler: kural dosyası, üç beceri, beş yardımcı, belge şablonları |
 | `kit/dil/en/` | Aynılarının İngilizcesi ve betik metinlerinin çevirisi (`dil.json`) |
