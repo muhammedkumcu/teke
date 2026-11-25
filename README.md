@@ -334,5 +334,5 @@ Testler iki dili de kurup sınar. Bir kural, beceri ya da şablon iki dilden yal
 
 <div align="center">
 <br>
-<sub>teke: erkek keçi, inatçı, yokuşu sever, sürüye kılavuzluk eder, yatay gözbebekleriyle neredeyse her yeri görür.</sub>
+<sub>teke: erkek keçi, inatçı, yatay gözbebekleriyle neredeyse her yeri görür.</sub>
 </div>
