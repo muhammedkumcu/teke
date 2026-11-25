@@ -336,5 +336,5 @@ The tests install and exercise both languages. If a rule, skill or template gain
 
 <div align="center">
 <br>
-<sub>teke: a billy goat. Stubborn and fond of slopes, it walks at the head of the herd and sees nearly everything through its horizontal pupils.</sub>
+<sub>teke: a billy goat. Stubborn and fond of slopes, it leads the flock and sees nearly everything through its horizontal pupils.</sub>
 </div>
