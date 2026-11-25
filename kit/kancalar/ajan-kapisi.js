@@ -30,12 +30,48 @@ function yasakMi(model, yasaklar) {
 
 // İş akışı betiğindeki agent(...) çağrılarını bulur. Her çağrı için ham metni ve tırnak içleri boşaltılmış
 // hâlini döndürür (istem metninde geçen "model" sözcüğü ya da parantez sayımı yanıltmasın diye).
+// Betikteki her konum için "kod mu" bilgisi: dize, şablon metni ve yorumların içi kod değildir. Böylece betiğe gömülü
+// içerik metninde geçen "…agent (rituximab)…" gibi bir söz çağrı sanılmaz. Şablon içindeki ${ … } yine koddur.
+function kodMaskesi(betik) {
+  const kod = new Uint8Array(betik.length);
+  const yigin = []; // iç içe şablonlarda ${ … } için süslü ayraç derinlikleri
+  let durum = "kod"; // kod | tek | cift | sablon | satir | blok
+  let derin = 0;
+  for (let i = 0; i < betik.length; i++) {
+    const c = betik[i], n = betik[i + 1];
+    if (durum === "kod") {
+      if (c === "/" && n === "/") { durum = "satir"; i++; continue; }
+      if (c === "/" && n === "*") { durum = "blok"; i++; continue; }
+      if (c === "'") { durum = "tek"; continue; }
+      if (c === '"') { durum = "cift"; continue; }
+      if (c === "`") { durum = "sablon"; continue; }
+      if (c === "{") derin++;
+      else if (c === "}") {
+        if (derin === 0 && yigin.length) { derin = yigin.pop(); durum = "sablon"; continue; }
+        if (derin > 0) derin--;
+      }
+      kod[i] = 1;
+    } else if (durum === "tek" || durum === "cift") {
+      if (c === "\\") i++;
+      else if (c === (durum === "tek" ? "'" : '"') || c === "\n") durum = "kod";
+    } else if (durum === "sablon") {
+      if (c === "\\") i++;
+      else if (c === "`") durum = "kod";
+      else if (c === "$" && n === "{") { yigin.push(derin); derin = 0; durum = "kod"; i++; }
+    } else if (durum === "satir") {
+      if (c === "\n") durum = "kod";
+    } else if (c === "*" && n === "/") { durum = "kod"; i++; }
+  }
+  return kod;
+}
 function ajanCagrilari(betik) {
   const sonuc = [];
+  const kod = kodMaskesi(betik);
   const re = /(^|[^.\w$])agent\s*\(/g;
   let m;
   while ((m = re.exec(betik))) {
     const bas = m.index + m[1].length;
+    if (!kod[bas]) continue; // dizenin ya da yorumun içinde: çağrı değil
     let i = m.index + m[0].length;
     let derinlik = 1;
     let tirnak = null;

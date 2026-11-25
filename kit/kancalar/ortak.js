@@ -201,9 +201,13 @@ const TUM_BASLIKLAR = {
   harita: [["HARİTA", "HARITA"], ["MAP"]],
 };
 function durumBolumu(metin, ad, enFazla) {
+  // Sözcükler öncelik sırasıyla tek tek denenir: belgede hem "Bekleyenler" hem eski "Açık kararlar" bölümü varsa
+  // (ileri tarihli kararlarını ayrı tutan proje) liste olarak "Bekleyenler" alınır.
   for (const sozcukler of [paket().basliklar[ad], ...(TUM_BASLIKLAR[ad] || [])]) {
-    const b = sozcukler && sozcukler.length ? bolum(metin, sozcukler, enFazla) : "";
-    if (b) return b;
+    for (const z of sozcukler || []) {
+      const b = bolum(metin, [z], enFazla);
+      if (b) return b;
+    }
   }
   return "";
 }

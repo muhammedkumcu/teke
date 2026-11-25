@@ -328,6 +328,10 @@ const devirK = path.join(P, "docs", "devir");
   esit("D6 iş akışında modelsiz agent() reddediliyor", a({ script: "await agent('x', {label:'a'})" }, "Workflow").karar === "deny");
   const karisik = a({ script: "const r = await agent('tara', {label:'a', model:'sonnet'});\nconst v = await agent(`doğrula (${r.length})`, {label:'b'});" }, "Workflow");
   esit("D7 iş akışında tek yardımcıya model yazmak ötekileri kurtarmıyor", karisik.karar === "deny" && /2 agent\(\) çağrısının 1 tanesinde/.test(karisik.neden), karisik.neden);
+  // betiğe gömülü içerik metninde geçen "agent (…)" sözü çağrı sayılmaz; şablon içindeki gerçek çağrı sayılır
+  const gomulu = "const KARTLAR = [{ metin: 'an alkylating agent (obsolete) and a biologic agent (rituximab)' }, { metin: \"agent (see Figure 2)\" }];\n// eski: agent('x')\n/* agent('y') */\nconst not = `ek: agent (z) ${1 + 1}`;\nawait agent(istem(KARTLAR), { label: 'a', model: 'sonnet' });";
+  esit("D8b içerik metninde geçen 'agent (…)' sözü yardımcı çağrısı sayılmıyor", a({ script: gomulu }, "Workflow").karar === null, a({ script: gomulu }, "Workflow").neden);
+  esit("D8b dize dışındaki modelsiz çağrı yine yakalanıyor, şablonun içindeki de", a({ script: gomulu + "\nawait agent('modelsiz', { label: 'b' });" }, "Workflow").karar === "deny" && a({ script: "const s = `${await agent('x', {label:'c'})}`;" }, "Workflow").karar === "deny");
   esit("D8 iş akışında her yardımcıda model varsa geçiyor", a({ script: "await parallel(xs.map(x => () => agent(x.prompt, {label:x.k, model:'sonnet'})));\nawait agent('sentez (bölüm 1)', {model:'opus', effort:'high'});" }, "Workflow").karar === null);
   esit("D9 ortak seçenek değişkeniyle verilen model sayılıyor", a({ script: "const TARA = { model: 'sonnet', effort: 'low' };\nawait agent('a', { ...TARA, label: 'x' });\nawait agent('b', TARA);" }, "Workflow").karar === null);
   esit("D10 istem metninde geçen model sözcüğü model sayılmıyor", a({ script: "await agent('hangi model daha iyi (karşılaştır)', {label:'a'})" }, "Workflow").karar === "deny");
@@ -714,6 +718,10 @@ const devirK = path.join(P, "docs", "devir");
   const rolYok = ["Role: code reviewer. Please review my commit.", "please act in this role: design lead", "rol: kodlama yapacağız", "ROLE: codex", "ROL: kodlama", "> role: design system lead", "Please read\nhandoff: docs/notes.md"].filter((s) => metindenRol(s) !== null);
   const rolVar = [["ROLE: code", "kod"], ["ROL: tasarım", "tasarim"], ["HANDOFF: docs/handoff/x.md\nROLE: design\nRead it.", "tasarim"], ["ROL: orkestratör", "orkestrator"], ["ROLE: orchestrator", "orkestrator"], ["DEVİR: docs/devir/x.md", "kod"], ["ROLE: code            (or: ROLE: design)", "kod"]].filter(([s, r]) => metindenRol(s) !== r);
   esit("J11 sıradan cümle oturumun rolünü değiştirmiyor, gerçek rol satırı tanınıyor", rolYok.length === 0 && rolVar.length === 0, JSON.stringify([rolYok, rolVar]));
+  // hem "Bekleyenler" hem eski "Açık kararlar" bölümü olan belgede liste olarak "Bekleyenler" alınır (sırası sonra olsa da)
+  yaz(path.join(P, "DEVAM.md"), "# DEVAM\n\n## 3) ŞU AN / SIRADAKİ\n1. iş\n\n## 4) AÇIK KARARLAR (zamanı gelince sorulur)\n1. Mağaza ne zaman açılsın\n2. Sunucu taşıma\n\n## 5) BEKLEYENLER\n- (durduruyor) Ara durağın kararları\n");
+  const bo = betik(P, "istem.js", { session_id: "j-onc", transcript_path: kayit(P, "j-onc", [kul("selam"), asi(100000)]), prompt: "devam" });
+  esit("J11 iki bölüm de varsa 'Bekleyenler' öncelikli", /1 madde/.test(bo.ek) && /Ara durağın kararları/.test(bo.ek) && !/Mağaza/.test(bo.ek), bo.ek);
   esit("J11 bölüm başlığı sözcük başında aranıyor", bolum("# T\n\n## KNOWN ISSUES\nx\n\n## ROADMAP\ny\n\n## NOW / NEXT\nz\n", ["NOW", "NEXT"], 500).startsWith("## NOW / NEXT") && bolum("# T\n\n## ROADMAP\ny\n", ["MAP"], 500) === "" && bolum("# D\n\n## HEDEFLER VE SAYILAR\nh\n", ["HEDEF"], 500).startsWith("## HEDEFLER"));
   esit("J10 Türkçe kurulumda İngilizce işaretler de tanınıyor", JSON.parse(oku(path.join(P, ".claude", "teke", "durum", "c4.json"))).rol === "tasarim" && betik(P, "istem.js", { session_id: "j-tr", transcript_path: kayit(P, "j-tr", []), prompt: "HANDOFF: docs/devir/x.md\nROLE: design" }).ek.includes("tasarım oturumu"));
 }

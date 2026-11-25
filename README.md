@@ -7,7 +7,7 @@
 **Büyük işleri Claude Code'da tek bir sohbetten yönet.**
 
 Sen yalnızca orkestratörle konuşursun; kodu ve tasarımı ayrı oturumlar yapar, biten her işe başka bir göz bakar.
-Sohbet dolmadan haber verir ve kaldığın yerden sürer. Her işten önce plan gösterir, yayından önce sana sorar.
+Orkestratör sohbet dolmadan haber verir ve kaldığı yerden sürer. Her işten önce plan gösterir, yayından önce sana sorar.
 Kararlarını, cevap bekleyen soruları ve hatalardan çıkan dersleri yazar; hiçbirini unutmaz.
 
 <br>
@@ -25,7 +25,7 @@ Kararlarını, cevap bekleyen soruları ve hatalardan çıkan dersleri yazar; hi
 
 Teke, Claude Code'da büyük işleri tek bir sohbetten yönetmek için hazırlanmış bir çalışma düzenidir. Projene bir kez kurarsın. Sonra yalnızca **orkestratör** dediğimiz oturumla konuşursun: seni dinler, planlar, işi kod ve tasarım oturumlarına verir, sonucu denetleyip sana gösterir.
 
-Orkestratör işin takibini de üstlenir. Sohbetin ne kadar dolduğunu izler, kararlarını ve hatalardan çıkan dersleri yazar, dersleri her oturumda, kararları ilgili işe başlarken yeniden okur, biten işi bağımsız yardımcılara denetletir, yayın gibi geri dönüşü zor adımlarda sana sorar. İş sürerken onunla sohbet etmeye devam edersin; soru sorman ya da yeni bir şey istemen çalışan oturumları aksatmaz.
+Orkestratör işin takibini de üstlenir. Sohbetin ne kadar dolduğunu izler. Kararlarını ve hatalardan çıkan dersleri yazar; dersleri her oturumda, kararları ilgili işe başlarken yeniden okur. Biten işi bağımsız yardımcılara denetletir, yayın gibi geri dönüşü zor adımlarda sana sorar. İş sürerken onunla sohbet etmeye devam edersin; soru sorman ya da yeni bir şey istemen çalışan oturumları aksatmaz.
 
 Teke modellerin zekâsına karışmaz. Onlara adım adım ne yapacaklarını dikte etmez, onları kalıba sokmaz; ne istendiğini ve sınırları söyler, yolu modele bırakır. Yaptığı şey çerçeveyi kurmak ve uzun bir projede düzenin bozulmadan sürmesini sağlamaktır.
 
@@ -38,9 +38,9 @@ Teke modellerin zekâsına karışmaz. Onlara adım adım ne yapacaklarını dik
 | **Tek muhatap** | Yalnızca orkestratörle konuşursun. Kod ve tasarım ayrı oturumlarda sürerken soru sorabilir, yeni iş verebilirsin; çalışan oturumu bölmen gerekmez. |
 | **Bağlam takibi ve compact** | Sohbet uzadıkça modelin aklında tutabildiği yer (bağlam) dolar. Teke bunu ölçer; dolmadan önce kaldığın yeri dosyaya yazar ve senden `/compact` yazmanı ister (sohbeti özetleyip yer açan komut). Sonrasında hiçbir şey yapıştırmadan kaldığın yerden sürersin. |
 | **Önce plan, sonra onay** | Yeni işten önce plan görürsün: ne yapılacak, hangi oturum yapacak, hangi model ne kadar düşünerek çalışacak, senden ne zaman ne gerekecek. Büyük iş onayını bekler; küçük ve net işi orkestratör tek cümleyle söyleyip başlatır. |
-| **Soru kaybolmaz** | Senden beklenen her soru, karar ve onay tek listede durur. İşi durduran hemen sorulur; durdurmayan biriktirilir ve iş bitince toplu sorulur. "devam" dediğinde orkestratör önce senden bekleyen bir şey olup olmadığını söyler. |
-| **Sözün olduğu gibi iletilir** | Orkestratör iş verirken senin cümlelerini aynen yazar, kendi yorumunu ayrı tutar; bir betik bunu denetler. Tek mesajda on ayrı şey söylesen de hepsi maddelere ayrılır, hiçbiri sessizce düşmez. |
-| **Yapan denetlemez** | Biten her kod ve tasarım işine, o işi yapmamış yardımcılar bakar: biri hata arar, biri testlerin göremediğini arar, biri tasarımı eleştirir. Orkestratör de sonucu kendi gözüyle görmeden "bitti" demez. |
+| **Soru kaybolmaz** | Orkestratörün cevabını beklediği her soru, senden beklediği her karar ve onay tek listede durur. İşi durduran hemen sorulur; durdurmayan biriktirilir ve iş bitince toplu sorulur. "Devam" dediğinde orkestratör önce senden beklediği bir şey olup olmadığını söyler. |
+| **Sözün olduğu gibi iletilir** | Orkestratör iş verirken senin cümlelerini aynen yazar, kendi yorumunu ayrı bölümde tutar; alıntıların sohbette gerçekten geçtiğini bir betik denetler. Tek mesajda on ayrı şey söylesen de hepsi maddelere ayrılır, hiçbiri sessizce düşmez. |
+| **Yapan denetlemez** | Biten kod ve tasarım işine (tek satırlık düzeltme dışında) o işi yapmamış yardımcılar bakar: biri hata arar, biri testlerin göremediğini arar, biri tasarımı eleştirir. Orkestratör de sonucu kendi gözüyle görmeden "bitti" demez. |
 | **Önce tasarım, sonra kod** | Ekranda görünen bir şey değişecekse tasarım oturumu önce seçenekleri çizer. Sen seçersin, kod ondan sonra yazılır. |
 | **İşe göre model ve düşünme düzeyi** | Her iş için oturumun ne kadar düşünerek çalışacağını, taramada ve denetimde hangi modelin kullanılacağını orkestratör seçer ve sana söyler. İstersen değiştirirsin. |
 | **Kalıcı hafıza ve dersler** | Kararların, kaldığın yer ve hatalardan çıkan dersler projendeki belgelere yazılır. Kaldığın yer ve dersler her oturum açılışında, kararlar ilgili işe başlarken yeniden okunur. Orkestratörü bir kez düzeltmen yeter: dersi yazar, sonraki oturumlar onu bilerek başlar. |
@@ -59,7 +59,7 @@ https://github.com/muhammedkumcu/teke deposunu ~/teke klasörüne indir, sonra i
 
 Yazman gereken tek şey bu. Gerisini o oturum halleder; kurulum bitince o oturum orkestratör olur ve ne yapmak istediğini sorar.
 
-> **Orkestratör için önerimiz:** elindeki en güçlü model (Fable ya da Opus), yüksek düşünme düzeyi (high) ve ultracode açık. Üçünü de oturumu açarken uygulamadan seçersin. Ultracode, Claude Code'un işi birden çok yardımcıya bölerek yürüttüğü kiptir; açıkken tarama ve denetim daha kapsamlı olur.
+> **Orkestratör için önerimiz:** elindeki en güçlü model (Fable ya da Opus), yüksek düşünme düzeyi (high) ve ultracode açık. Üçünü de oturumu açarken uygulamadan seçersin. Ultracode açıkken orkestratör tarama, araştırma ve denetim için birden çok yardımcıyı sana sormadan çalıştırır ve ne kurduğunu söyler.
 
 İndirme bir kez yapılır. Sonrasında yazacakların daha da kısadır:
 
@@ -93,7 +93,7 @@ flowchart LR
 ```
 
 - **Orkestratör** seninle konuşan oturumdur. Planlar, iş tarifini yazar, gelen sonucu doğrular, kayıt tutar. Kodu ve tasarımı kendisi üretmez.
-- **Kod oturumu** kodu ve testleri yazar, çalıştırır. **Tasarım oturumu** ekran, görsel ve metin tonu için seçenek çizer; uygulama koduna dokunmaz.
+- **Kod oturumu** kodu ve testleri yazar, çalıştırır. **Tasarım oturumu** ekran, görsel ve metin tonu için seçenekler hazırlar; uygulama koduna dokunmaz.
 - Kod ve tasarım oturumları kalıcıdır. Proje boyunca aynı oturumlar kullanılır, her işte baştan anlatmak gerekmez. Dolduklarında yenisi açılmaz; compact ile yer açılır ve kaldıkları yerden sürerler.
 - **Yardımcılar** kısa ömürlüdür. Orkestratör onları tarama, araştırma ve denetim için çağırır; işleri bitince kapanırlar.
 - Birbirini beklemeyen işler birlikte yürür: kod yazılırken tasarım çizilebilir.
@@ -132,6 +132,10 @@ Kısa bir örnek:
 > **Sen:** Başla.<br>
 > **Orkestratör:** Tasarım oturumuna gönderdim. Seçenekler gelince göstereceğim.<br>
 > *(bir süre sonra)*<br>
+> **Orkestratör:** İki seçenek hazır, eleştirmen de baktı. Hangisi olsun?<br>
+> **Sen:** İkincisi.<br>
+> **Orkestratör:** Kod oturumuna gönderdim.<br>
+> *(bir süre sonra)*<br>
 > **Orkestratör:** Bitti. Ayarlar ekranından açıp kapatabilirsin. Denetim iki küçük hata buldu, ikisi de düzeltildi.
 
 ## Hangi projelerde kullanılır?
@@ -162,7 +166,7 @@ proje/
    ├─ KARARLAR.md     verdiğin kararlar ve gerekçeleri
    ├─ DERSLER.md      bu projede çıkan dersler
    ├─ devir/          iş tarifleri ve raporları
-   └─ arsiv/          eskiyen kayıtlar (gerektiğinde açılır)
+   └─ arsiv/          eskiyen kayıtlar (ilk taşımada oluşur)
 ```
 
 - **Teke'nin kendi dosyaları** her projede aynıdır ve güncellemede yenilenir.
@@ -184,18 +188,18 @@ proje/
 
 ### Senden beklenenler
 
-- Orkestratörün senden beklediği her şey durum belgesinde tek listede durur: cevaplamadığın soru, "sonra konuşuruz" dediğin karar, vereceğin onay, kendi cihazında yapacağın deneme, karşılık vermediğin öneri.
+- Orkestratörün senden beklediği her şey `DEVAM.md` belgesinde tek listede durur: cevaplamadığın soru, "sonra konuşuruz" dediğin karar, vereceğin onay, kendi cihazında yapacağın deneme, karşılık vermediğin öneri.
 - Her maddenin yanında işi durdurup durdurmadığı yazar. İşi durduran soru hemen sorulur. Durdurmayan soru iş sürerken araya girmez; orkestratör makul bir varsayımla sürer, varsayımını yazar ve soruyu iş bitince ötekilerle birlikte sorar.
 - Sen "devam" yazdığında, bir iş kapandığında ve compact'tan sonra liste iki grupta gösterilir: işi durduranlar ve durdurmayanlar. Liste boşsa orkestratör senden bir şey beklemediğini söyler.
-- "devam" demek soruları cevaplamış sayılmaz. Madde listeden ancak sen cevaplayınca, vazgeçince ya da geçersiz kalınca çıkar.
+- "Devam" demen soruları cevapladığın anlamına gelmez. Bir madde listeden üç yolla çıkar: cevaplarsın, vazgeçersin ya da madde geçersiz kalır.
 
 ### İş tarifi
 
 Orkestratör bir işi başka oturuma verirken bir dosya yazar. İçinde şunlar durur:
 
-- **Senin sözün,** aynen. Bir betik bu alıntıların sohbette gerçekten geçtiğine bakar; bulamadığı alıntıyı bir kez geri çevirir ve hangisi olduğunu söyler.
+- **Senin sözün,** aynen. Bir betik bu alıntıların sohbette gerçekten geçtiğine bakar; bulamazsa tarifin gönderilmesini bir kez durdurur ve hangi alıntı olduğunu söyler.
 - **Orkestratörün yorumu,** ayrı bir bölümde.
-- **Örnek alınacak işler:** önceden beğendiklerin ve beğenmediklerin.
+- **Ölçü alınacak örnekler:** önceden beğendiklerin ve beğenmediklerin.
 - **Kullanılacak beceriler (skill):** işe uygun olanları orkestratör seçer. Kod işinde kod incelemesi (code-review) varsayılandır: kod oturumu commit'ten önce kendi değişikliğini inceler. Gerektiğinde sadeleştirme, güvenlik incelemesi ve belge yazımı becerileri eklenir. Tasarım işi tasarım becerileri olmadan gönderilmez.
 - **İşin ne zaman bitmiş sayılacağı:** hangi kanıtla (test, komut, görüntü).
 
@@ -225,10 +229,10 @@ Teke'nin hafızası projendeki belgelerdir. Sohbet kapansa da özetlense de bilg
 
 | Ne zaman? | Ne yazılır? |
 |:--|:--|
-| **Bir karar verdiğinde** | Karar ve gerekçesi, aynı anda karar defterine |
-| **Orkestratörü düzelttiğinde** | Ders, aynı anda ders defterine |
+| **Bir karar verdiğinde** | Karar ve gerekçesi, hemen `docs/KARARLAR.md` dosyasına |
+| **Orkestratörü düzelttiğinde** | Ders, hemen `docs/DERSLER.md` dosyasına |
 | **Sana bir soru sorulduğunda ya da bir karar sonraya kaldığında** | Soru, senden beklenenler listesine |
-| **Bir iş kapanırken** | Kaldığın yer güncellenir. Orkestratör senin mesajlarını yeniden okur; yaptığın ama yazılmamış kalan düzeltmeleri ders olarak ekler. |
+| **Bir iş kapanırken** | Kaldığın yer güncellenir. Mesajlarında kalıp yazılmamış düzeltmeler ders olarak eklenir. |
 | **Compact'tan önce** | Belgelere henüz girmemiş her şey bir nota |
 
 | Ne zaman? | Ne okunur? |
@@ -250,9 +254,9 @@ Yukarıdakilerin çoğu orkestratörün uyduğu kurallardır. Aşağıdakiler is
 | Ne zaman? | Betik ne yapar? |
 |:--|:--|
 | **Oturum açılınca, compact ve clear'dan sonra** | Kaldığın yeri ve dersleri yükler. |
-| **Her mesajda ve uzun iş sürerken** | Doluluğu ölçer, eşik aşılınca haber verir. Uzun süredir ders taraması yapılmadıysa hatırlatır. |
+| **Her mesajda ve uzun iş sürerken** | Doluluğu ölçer, eşik aşılınca haber verir. Her 25 mesajda bir ders taramasını hatırlatır. |
 | **Sen "devam" yazınca** | Senden beklenenlerin listesini orkestratörün önüne koyar. |
-| **İş başka oturuma gönderilirken** | Senin sözünün değiştirilmediğine bakar; bulamadığı alıntıyı bir kez geri çevirir. |
+| **İş başka oturuma gönderilirken** | Senin sözünün değiştirilmediğine bakar; bulamadığı alıntı varsa gönderimi bir kez durdurur. |
 | **Bir yardımcı çağrılırken** | Modeli yazılmamış ya da yasakladığın modelle açılan yardımcıyı durdurur. |
 | **Onay isteyen bir komut çalıştırılırken** | Kod ve tasarım oturumunda komutu durdurur; orkestratörde sana sorar. |
 
@@ -265,11 +269,11 @@ Betiklerden biri hata verirse işin durmaz. İstemediğin betiği ayarlardan kap
 
 <br>
 
-Ayarlar `.claude/teke/ayar.json` dosyasındadır. Orkestratöre söylemen yeter; istersen elle de düzenleyebilirsin. Güncelleme ayarlarını korur.
+Ayarlar `.claude/teke/ayar.json` dosyasındadır. Değiştirmek için orkestratöre söylemen yeter; istersen elle de düzenleyebilirsin. Güncelleme ayarlarını korur.
 
 | Ayar | Ne işe yarar? | Başlangıç değeri |
 |:--|:--|:--|
-| `roller.kod`, `roller.tasarim` | Oturumların modeli ve açılıştaki düşünme düzeyi | `opus`, `high` |
+| `roller.kod`, `roller.tasarim` | Kod ve tasarım oturumlarının modeli ve açılıştaki düşünme düzeyi | `opus`, `high` |
 | `roller.ajanIsci`, `roller.ajanHakem` | Tarama ve denetim yardımcılarının modeli | `sonnet`, `opus` |
 | `ajan.yasakModeller` | Yardımcılarda kullanılmasını istemediğin modeller | boş |
 | `ajan.modelZorunlu` | Modeli yazılmamış yardımcı çağrısı durdurulsun | açık |
@@ -305,7 +309,7 @@ Kurulu bir projenin dilini sonradan değiştirebilirsin; orkestratöre söylemen
 
 <br>
 
-| Klasör | İçinde ne var? |
+| Yer | İçinde ne var? |
 |:--|:--|
 | `KURULUM.md`, `SETUP.md` | Kuran oturumun izlediği talimat (Türkçe, İngilizce) |
 | `kit/kancalar/` | Kendiliğinden çalışan betikler (iki dilde ortak) |
@@ -320,7 +324,7 @@ Değişikliği `kit/` altında yap, sonra testleri çalıştır:
 node kit/araclar/testler.js
 ```
 
-Testler iki dili de kurup sınar. Bir kural, beceri ya da şablon yalnız bir dilde bölüm ya da madde kazanır ya da yitirirse, ya da bir betik metninin çevirisi yoksa test kalır.
+Testler iki dili de kurup sınar. Bir kural, beceri ya da şablon iki dilden yalnız birinde bölüm veya madde kazanır ya da yitirirse testler başarısız olur. Bir betik metninin çevirisi eksikse de öyle.
 
 </details>
 
